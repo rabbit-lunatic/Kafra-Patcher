@@ -27,7 +27,13 @@ pub struct WindowState {
 impl WindowState {
     pub fn load() -> Option<WindowState> {
         let content = fs::read_to_string(WINDOW_STATE_FILE).ok()?;
-        serde_json::from_str(&content).ok()
+        let state: WindowState = serde_json::from_str(&content).ok()?;
+        // Validate coordinates: ignore if they look like minimized values (-32000)
+        // or are extremely far off-screen.
+        if state.x < -20000 || state.y < -20000 {
+            return None;
+        }
+        Some(state)
     }
 
     pub fn save(&self) {
@@ -38,7 +44,14 @@ impl WindowState {
 }
 
 pub fn save_window_position(window: &Window) {
+    if window.is_minimized() {
+        return;
+    }
     if let Ok(pos) = window.outer_position() {
+        // Double check for minimized coordinates
+        if pos.x < -20000 || pos.y < -20000 {
+            return;
+        }
         let state = WindowState { x: pos.x, y: pos.y };
         state.save();
     }
