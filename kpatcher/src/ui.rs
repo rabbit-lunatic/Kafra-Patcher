@@ -18,6 +18,10 @@ use wry::webview::{WebView, WebViewBuilder};
 
 const WINDOW_STATE_FILE: &str = "kpatcher_state.json";
 
+/// Coordinates below this threshold are considered invalid (e.g. minimized windows
+/// on Windows report positions like -32000).
+const MINIMIZED_COORD_THRESHOLD: i32 = -20000;
+
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct WindowState {
     pub x: i32,
@@ -30,7 +34,7 @@ impl WindowState {
         let state: WindowState = serde_json::from_str(&content).ok()?;
         // Validate coordinates: ignore if they look like minimized values (-32000)
         // or are extremely far off-screen.
-        if state.x < -20000 || state.y < -20000 {
+        if state.x < MINIMIZED_COORD_THRESHOLD || state.y < MINIMIZED_COORD_THRESHOLD {
             return None;
         }
         Some(state)
@@ -49,7 +53,7 @@ pub fn save_window_position(window: &Window) {
     }
     if let Ok(pos) = window.outer_position() {
         // Double check for minimized coordinates
-        if pos.x < -20000 || pos.y < -20000 {
+        if pos.x < MINIMIZED_COORD_THRESHOLD || pos.y < MINIMIZED_COORD_THRESHOLD {
             return;
         }
         let state = WindowState { x: pos.x, y: pos.y };

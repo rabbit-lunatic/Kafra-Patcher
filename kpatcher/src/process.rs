@@ -56,8 +56,9 @@ mod windows {
         inner(s.as_ref())
     }
 
-    /// This function is required to start processes that require elevation, from
-    /// a non-elevated process.
+    /// Spawns a process using ShellExecuteExW.
+    /// First attempts to launch without elevation ("open"), then falls back
+    /// to elevation ("runas") if the initial attempt fails.
     pub fn win32_spawn_process_runas<S>(path: S, parameter: S) -> Result<bool>
     where
         S: AsRef<OsStr>,
@@ -86,30 +87,46 @@ mod windows {
         
         let exe_path = to_u16s(exe_path.to_str().unwrap_or(""))?;
         let parameter = to_u16s(parameter)?;
-        let operation = to_u16s("runas")?;
         let class = to_u16s("exefile")?;
-        let mut execute_info = SHELLEXECUTEINFOW {
-            cbSize: std::mem::size_of::<SHELLEXECUTEINFOW>() as u32,
-            fMask: SEE_MASK_CLASSNAME,
-            hwnd: ptr::null_mut(),
-            lpVerb: operation.as_ptr(),
-            lpFile: exe_path.as_ptr(),
-            lpParameters: parameter.as_ptr(),
-            lpDirectory: exe_dir_u16
-                .as_ref()
-                .map(|v| v.as_ptr())
-                .unwrap_or(ptr::null()),
-            nShow: SW_SHOW,
-            hInstApp: ptr::null_mut(),
-            lpIDList: ptr::null_mut(),
-            lpClass: class.as_ptr(),
-            hkeyClass: ptr::null_mut(),
-            dwHotKey: 0,
-            hMonitor: ptr::null_mut(),
-            hProcess: ptr::null_mut(),
+
+        // Helper to attempt launch with a given verb
+        let try_launch = |verb: &str| -> Result<bool> {
+            let verb_u16 = to_u16s(verb)?;
+            let mut execute_info = SHELLEXECUTEINFOW {
+                cbSize: std::mem::size_of::<SHELLEXECUTEINFOW>() as u32,
+                fMask: SEE_MASK_CLASSNAME,
+                hwnd: ptr::null_mut(),
+                lpVerb: verb_u16.as_ptr(),
+                lpFile: exe_path.as_ptr(),
+                lpParameters: parameter.as_ptr(),
+                lpDirectory: exe_dir_u16
+                    .as_ref()
+                    .map(|v| v.as_ptr())
+                    .unwrap_or(ptr::null()),
+                nShow: SW_SHOW,
+                hInstApp: ptr::null_mut(),
+                lpIDList: ptr::null_mut(),
+                lpClass: class.as_ptr(),
+                hkeyClass: ptr::null_mut(),
+                dwHotKey: 0,
+                hMonitor: ptr::null_mut(),
+                hProcess: ptr::null_mut(),
+            };
+            let result = unsafe { ShellExecuteExW(&mut execute_info) };
+            Ok(result != 0)
         };
 
-        let result = unsafe { ShellExecuteExW(&mut execute_info) };
-        Ok(result != 0)
+        // Try without elevation first
+        match try_launch("open") {
+            Ok(true) => {
+                log::info!("Process launched without elevation");
+                Ok(true)
+            }
+            _ => {
+                // Fallback to elevation
+                log::info!("Retrying with elevation (runas)");
+                try_launch("runas")
+            }
+        }
     }
 }

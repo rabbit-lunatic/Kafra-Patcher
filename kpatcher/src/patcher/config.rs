@@ -12,12 +12,38 @@ use aes_gcm::{
     Aes256Gcm, Nonce // Or `Key`
 };
 
-/// Marcador para identificar config embutido no final do EXE
+/// Marker to identify embedded config at the end of the EXE
 const CONFIG_MARKER: &[u8; 4] = b"KCFG";
 
-/// Chave de criptografia compartilhada (32 bytes)
-/// IMPORTANTE: Manter sincronizado com mkpatch/src/embed.rs
-const ENCRYPTION_KEY: &[u8; 32] = b"kpatcher_secret_key_32_bytes!!!!";
+/// XOR mask used to obfuscate the encryption key in the binary.
+const XOR_MASK: [u8; 32] = [
+    0xA7, 0x3B, 0x5C, 0x9E, 0x12, 0xF4, 0x68, 0xD1,
+    0x83, 0x47, 0xB2, 0x0F, 0xE5, 0x6A, 0x91, 0xC3,
+    0x2D, 0x78, 0xF0, 0x14, 0x56, 0xAB, 0x39, 0xE7,
+    0x04, 0x8C, 0xD5, 0x63, 0xB9, 0x1E, 0x72, 0x4F,
+];
+
+/// Obfuscated encryption key (result of original key XOR'd with XOR_MASK).
+/// IMPORTANT: Keep in sync with mkpatch/src/embed.rs
+const OBFUSCATED_KEY: [u8; 32] = {
+    let key = b"kpatcher_secret_key_32_bytes!!!!";
+    let mut out = [0u8; 32];
+    let mut i = 0;
+    while i < 32 {
+        out[i] = key[i] ^ XOR_MASK[i];
+        i += 1;
+    }
+    out
+};
+
+/// Derives the encryption key by reversing the XOR obfuscation.
+fn derive_encryption_key() -> [u8; 32] {
+    let mut key = [0u8; 32];
+    for i in 0..32 {
+        key[i] = OBFUSCATED_KEY[i] ^ XOR_MASK[i];
+    }
+    key
+}
 
 #[derive(Deserialize, Clone)]
 pub struct PatcherConfiguration {
@@ -80,6 +106,8 @@ pub struct PatchingConfiguration {
     pub in_place: bool,        // In-place GRF patching
     pub check_integrity: bool, // Check THOR archives' integrity
     pub create_grf: bool,      // Create new GRFs if they don't exist
+    #[serde(default)]
+    pub concurrent_downloads: Option<usize>, // Max concurrent downloads (default: 8)
 }
 
 pub fn retrieve_patcher_configuration(
@@ -146,7 +174,8 @@ fn extract_embedded_config() -> Result<PatcherConfiguration> {
     let nonce = Nonce::from_slice(nonce_bytes);
 
     // Descriptografar
-    let cipher = Aes256Gcm::new(ENCRYPTION_KEY.into());
+    let key = derive_encryption_key();
+    let cipher = Aes256Gcm::new(aes_gcm::Key::<Aes256Gcm>::from_slice(&key));
     let compressed_data = cipher.decrypt(nonce, ciphertext)
         .map_err(|e| anyhow::anyhow!("Failed to decrypt embedded config: {}", e))?;
 

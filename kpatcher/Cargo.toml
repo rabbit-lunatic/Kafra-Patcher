@@ -54,4 +54,4 @@ winres = "0.1"
 [dev-dependencies]
 twox-hash = "1.5"
 walkdir = "2.3"
-httptest = "0.13"
+httptest = "0.16"

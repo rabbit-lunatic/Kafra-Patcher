@@ -29,6 +29,12 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev
 
+      - name: Check formatting
+        run: cargo fmt --check
+
+      - name: Clippy
+        run: cargo clippy --workspace -- -D warnings
+
       - name: Build
         run: cargo build --verbose
 

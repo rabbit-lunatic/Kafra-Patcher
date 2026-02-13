@@ -4,7 +4,7 @@ use std::fs;
 use std::io::{Read, Seek};
 use std::path::{Path, PathBuf};
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use gruf::grf::{GrfArchive, GrfArchiveBuilder};
 use gruf::thor::{ThorArchive, ThorFileEntry};
 
@@ -100,7 +100,7 @@ fn apply_grf_to_grf_oop(
 
     // Add files from the original archive
     let mut target_archive = GrfArchive::open(&backup_file_path)?;
-    // Preservar versão do GRF original
+    // Preserve original GRF version
     let original_version_major = target_archive.version_major();
     let original_version_minor = target_archive.version_minor();
 
@@ -133,9 +133,10 @@ fn apply_grf_to_grf_oop(
         );
     }
 
-    {
-        let grf_file = fs::File::create(target_grf_path)?;
-        // Usar versão do GRF original para preservar criptografia
+    // Build the patched GRF; restore backup on failure
+    let build_result = (|| -> Result<()> {
+        let grf_file = fs::File::create(target_grf_path.as_ref())?;
+        // Use original GRF version to preserve encryption
         let mut builder = GrfArchiveBuilder::create(grf_file, original_version_major, original_version_minor)?;
         for (relative_path, entry) in merge_entries {
             match entry.source {
@@ -150,8 +151,19 @@ fn apply_grf_to_grf_oop(
                 }
             }
         }
+        Ok(())
+    })();
+
+    if let Err(e) = build_result {
+        // Restore backup on failure
+        log::error!("Patching failed, restoring backup: {}", e);
+        let _ = fs::remove_file(target_grf_path.as_ref());
+        fs::rename(&backup_file_path, target_grf_path.as_ref())
+            .with_context(|| "Failed to restore GRF backup after patching error")?;
+        return Err(e);
     }
-    // Remove backup file
+
+    // Remove backup file on success
     Ok(fs::remove_file(backup_file_path)?)
 }
 
@@ -195,10 +207,10 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
     // Prepare file entries that'll be used to make the patched GRF
     let mut merge_entries: HashMap<String, MergeEntry> = HashMap::new();
     
-    // Add files from the original archive while discarding files remove in the patch
+    // Add files from the original archive while discarding files removed in the patch
     let mut grf_archive = GrfArchive::open(&backup_file_path)?;
     
-    // Preservar versão do GRF original
+    // Preserve original GRF version
     let original_version_major = grf_archive.version_major();
     let original_version_minor = grf_archive.version_minor();
     
@@ -234,9 +246,10 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
         );
     }
 
-    {
-        let grf_file = fs::File::create(grf_file_path)?;
-        // Usar versão do GRF original para preservar criptografia
+    // Build the patched GRF; restore backup on failure
+    let build_result = (|| -> Result<()> {
+        let grf_file = fs::File::create(grf_file_path.as_ref())?;
+        // Use original GRF version to preserve encryption
         let mut builder = GrfArchiveBuilder::create(grf_file, original_version_major, original_version_minor)?;
         for (relative_path, entry) in merge_entries {
             match entry.source {
@@ -251,7 +264,18 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
                 }
             }
         }
+        Ok(())
+    })();
+
+    if let Err(e) = build_result {
+        // Restore backup on failure
+        log::error!("Patching failed, restoring backup: {}", e);
+        let _ = fs::remove_file(grf_file_path.as_ref());
+        fs::rename(&backup_file_path, grf_file_path.as_ref())
+            .with_context(|| "Failed to restore GRF backup after patching error")?;
+        return Err(e);
     }
+
     // Remove backup file once the patched GRF has been built
     Ok(fs::remove_file(backup_file_path)?)
 }

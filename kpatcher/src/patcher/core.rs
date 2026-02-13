@@ -187,9 +187,16 @@ async fn interruptible_update_routine(
 ) -> Result<()> {
     log::info!("Start patching");
 
+    // Build a shared HTTP client with timeout
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(30))
+        .build()
+        .with_context(|| "Failed to build HTTP client")?;
+
     // Find a patch server that we can connect to
     log::info!("Looking for an available patch server ...");
     let (mut patch_list, patch_data_url) = find_available_patch_server(
+        &client,
         config.web.patch_servers.as_slice(),
         &config.web.preferred_patch_server,
         patcher_thread_rx,
@@ -220,12 +227,15 @@ async fn interruptible_update_routine(
     let patch_url =
         Url::parse(patch_data_url.as_str()).with_context(|| "Failed to parse 'patch_url'")?;
     let tmp_dir = tempfile::tempdir().with_context(|| "Failed to create temporary directory")?;
+    let concurrent_downloads = config.patching.concurrent_downloads.unwrap_or(8);
     let pending_patch_queue = download_patches_concurrent(
+        &client,
         patch_url,
         patch_list,
         tmp_dir.path(),
         config.patching.check_integrity,
-        &ui_controller,
+        concurrent_downloads,
+        ui_controller,
         patcher_thread_rx,
     )
     .await
@@ -241,7 +251,7 @@ async fn interruptible_update_routine(
         pending_patch_queue,
         config,
         &cache_file_path,
-        &ui_controller,
+        ui_controller,
         patcher_thread_rx,
     )
     .await
@@ -257,6 +267,7 @@ async fn interruptible_update_routine(
 /// Iterates through `server_list` and returns the first available server's info.
 /// `preferred_server_name` is checked first if present.
 async fn find_available_patch_server(
+    client: &reqwest::Client,
     server_list: &[PatchServerInfo],
     preferred_server_name: &Option<String>,
     patching_thread_rx: &mut flume::Receiver<PatcherCommand>,
@@ -267,7 +278,7 @@ async fn find_available_patch_server(
             .iter()
             .find(|s| &s.name == preferred_server_name);
         if let Some(preferred_server) = preferred_server {
-            if let Ok((patch_list, patch_url)) = probe_patch_server(preferred_server).await {
+            if let Ok((patch_list, patch_url)) = probe_patch_server(client, preferred_server).await {
                 return Ok((patch_list, patch_url));
             } else {
                 log::warn!("'{}' is unavailable", preferred_server_name);
@@ -285,7 +296,7 @@ async fn find_available_patch_server(
         // Cancel the patching process if we've been asked to or if the other
         // end of the channel has been disconnected
         process_incoming_commands(patching_thread_rx)?;
-        if let Ok((patch_list, patch_url)) = probe_patch_server(server).await {
+        if let Ok((patch_list, patch_url)) = probe_patch_server(client, server).await {
             return Ok((patch_list, patch_url));
         } else {
             log::warn!("'{}' is unavailable", server.name);
@@ -300,8 +311,7 @@ async fn find_available_patch_server(
 /// Checks whether a patch server is up or not.
 /// Returns the list of patches served by the server as well as the URL to
 /// download them from.
-async fn probe_patch_server(server_info: &PatchServerInfo) -> Result<(ThorPatchList, Url)> {
-    let client = reqwest::Client::new();
+async fn probe_patch_server(client: &reqwest::Client, server_info: &PatchServerInfo) -> Result<(ThorPatchList, Url)> {
     // Parse URLs
     let patch_list_url = Url::parse(server_info.plist_url.as_str())
         .with_context(|| "Failed to parse 'plist_url'")?;
@@ -309,12 +319,12 @@ async fn probe_patch_server(server_info: &PatchServerInfo) -> Result<(ThorPatchL
         .with_context(|| "Failed to parse 'patch_url'")?;
 
     // Fetch plist
-    let patch_list = fetch_patch_list(patch_list_url)
+    let patch_list = fetch_patch_list(client, patch_list_url)
         .await
         .with_context(|| "Failed to retrieve the patch list")?;
 
     // Ensure that the server serves the patches (check the first patch of the list)
-    if let Some(patch_info) = patch_list.get(0) {
+    if let Some(patch_info) = patch_list.first() {
         let patch_resp = client
             .head(patch_url.join(patch_info.file_name.as_str())?)
             .send()
@@ -331,14 +341,16 @@ async fn probe_patch_server(server_info: &PatchServerInfo) -> Result<(ThorPatchL
 /// `patch_list_url` argument.
 ///
 /// Returns a vector of `ThorPatchInfo` in case of success.
-async fn fetch_patch_list(patch_list_url: Url) -> Result<ThorPatchList> {
-    let resp = reqwest::get(patch_list_url)
+async fn fetch_patch_list(client: &reqwest::Client, patch_list_url: Url) -> Result<ThorPatchList> {
+    let resp = client
+        .get(patch_list_url)
+        .send()
         .await
         .with_context(|| "Failed to GET URL")?;
     if !resp.status().is_success() {
         return Err(anyhow!("Patch list file not found on the remote server"));
     }
-    let patch_index_content = resp.text().await.with_context(|| "Invalid responde body")?;
+    let patch_index_content = resp.text().await.with_context(|| "Invalid response body")?;
     log::info!("Parsing patch index...");
 
     Ok(thor::patch_list_from_string(patch_index_content.as_str()))
@@ -369,10 +381,12 @@ fn get_instance_asset_file_name(extension: impl AsRef<std::ffi::OsStr>) -> Resul
 ///
 /// This function is interruptible.
 async fn download_patches_concurrent(
+    client: &reqwest::Client,
     patch_url: Url,
     patch_list: ThorPatchList,
     download_directory: impl AsRef<Path>,
     ensure_integrity: bool,
+    concurrent_downloads: usize,
     ui_controller: &UiController,
     patching_thread_rx: &mut flume::Receiver<PatcherCommand>,
 ) -> InterruptibleFnResult<Vec<PendingPatch>> {
@@ -381,7 +395,7 @@ async fn download_patches_concurrent(
     // Download files in a cancelable manner
     let mut vec = tokio::select! {
         cancel_res = wait_for_cancellation(patching_thread_rx) => return Err(cancel_res),
-        download_res = download_patches_concurrent_inner(patch_url, patch_list, download_directory, ensure_integrity, ui_controller) => {
+        download_res = download_patches_concurrent_inner(client, patch_url, patch_list, download_directory, ensure_integrity, concurrent_downloads, ui_controller) => {
             download_res.map_err(|e| InterruptibleFnError::Err(format!("{:#}", e)))
         },
     }?;
@@ -394,16 +408,15 @@ async fn download_patches_concurrent(
 ///
 /// Returns an unordered vector of `PendingPatch`.
 async fn download_patches_concurrent_inner(
+    client: &reqwest::Client,
     patch_url: Url,
     patch_list: ThorPatchList,
     download_directory: impl AsRef<Path>,
     ensure_integrity: bool,
+    concurrent_downloads: usize,
     ui_controller: &UiController,
 ) -> Result<Vec<PendingPatch>> {
-    const CONCURRENT_DOWNLOADS: usize = 32;
     const ONE_SECOND: Duration = Duration::from_secs(1);
-    // Shared reqwest client
-    let client = reqwest::Client::new();
     // Shared value that contains the number of downloaded patches
     let shared_patch_number = AtomicUsize::new(0_usize);
     // Shared tuple that's used to compute the download speed
@@ -412,7 +425,6 @@ async fn download_patches_concurrent_inner(
     // Collect stream of "PendingPatch" concurrently with an unordered_buffer
     let patch_count = patch_list.len();
     futures::stream::iter(patch_list.into_iter().map(|patch_info| async {
-        let client = &client;
         let patch_file_url = patch_url
             .join(patch_info.file_name.as_str())
             .with_context(|| "Failed to generate URL for patch file")?;
@@ -495,7 +507,7 @@ async fn download_patches_concurrent_inner(
             local_file_path,
         }) as Result<PendingPatch>
     }))
-    .buffer_unordered(CONCURRENT_DOWNLOADS)
+    .buffer_unordered(concurrent_downloads)
     .try_collect()
     .await
 }
@@ -721,7 +733,6 @@ fn apply_patch(
 
 /// Verifica a integridade de um arquivo GRF após aplicar patches.
 /// Abre o GRF e verifica se todos os arquivos podem ser lidos corretamente.
-#[allow(dead_code)]
 fn verify_grf_integrity(grf_path: impl AsRef<Path>) -> Result<()> {
     let mut grf_archive = GrfArchive::open(grf_path.as_ref())
         .with_context(|| format!("Falha ao abrir GRF para verificação: {}", grf_path.as_ref().display()))?;
