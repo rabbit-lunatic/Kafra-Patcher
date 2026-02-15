@@ -134,7 +134,13 @@ pub fn build_webview(
     // Apply border radius if configured (Windows only)
     #[cfg(windows)]
     if let Some(radius) = config.window.border_radius {
-        apply_border_radius(&window, config.window.width, config.window.height, radius);
+        let physical_size = window.inner_size();
+        apply_border_radius(
+            &window,
+            physical_size.width as i32,
+            physical_size.height as i32,
+            (radius as f64 * window.scale_factor()) as i32,
+        );
     }
 
     // Shared state for IPC handler
