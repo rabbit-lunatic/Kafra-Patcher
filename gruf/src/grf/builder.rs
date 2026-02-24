@@ -79,7 +79,10 @@ impl<W: Write + Seek> GrfArchiveBuilder<W> {
         // If entry is encrypted, FORCE incompatibility -> we must decrypt (read_file_content) and re-compress (add_file)
         // because we don't know the key of the source GRF inside `import_raw_entry_from_grf` easily without extracting it,
         // and we want target GRF to be unencrypted (or re-encrypted if implemented later, but simpler to store unencrypted).
-        let is_encrypted = matches!(entry.encryption, crate::grf::reader::GrfFileEncryption::Encrypted(_));
+        let is_encrypted = matches!(
+            entry.encryption,
+            crate::grf::reader::GrfFileEncryption::Encrypted(_)
+        );
 
         if !compatible || is_encrypted {
             let content = archive.read_file_content(&relative_path)?;
@@ -258,13 +261,13 @@ impl<W: Write + Seek> GrfArchiveBuilder<W> {
             table.write_all(&encrypted_name)?;
             table.write_all(&[0u8; 4])?;
 
-            let size_tot_enc = entry.size_compressed
+            let size_tot_enc = entry
+                .size_compressed
                 .wrapping_add(entry.size)
                 .wrapping_add(0x02CB);
             table.write_all(&size_tot_enc.to_le_bytes())?;
 
-            let size_compressed_aligned_enc =
-                entry.size_compressed_aligned.wrapping_add(0x92CB);
+            let size_compressed_aligned_enc = entry.size_compressed_aligned.wrapping_add(0x92CB);
             table.write_all(&size_compressed_aligned_enc.to_le_bytes())?;
 
             table.write_all(&entry.size.to_le_bytes())?;
