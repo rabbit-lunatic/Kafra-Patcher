@@ -95,8 +95,7 @@ async fn update_game(
     match res {
         Err(err) => {
             log::error!("{:#}", err);
-            ui_controller
-                .dispatch_patching_status(PatchingStatus::Error(format!("{:#}", err)));
+            ui_controller.dispatch_patching_status(PatchingStatus::Error(format!("{:#}", err)));
             // Nota: play_with_error apenas habilita o botão Play no JavaScript,
             // o jogo só será lançado quando o usuário clicar no botão.
         }
@@ -528,10 +527,7 @@ fn is_archive_valid(archive_path: impl AsRef<Path>) -> Result<bool> {
                 Ok(true)
             } else {
                 // Only consider this an error if the integrity file was found
-                Err(anyhow!(
-                    "Archive's integrity file is invalid: {}",
-                    e,
-                ))
+                Err(anyhow!("Archive's integrity file is invalid: {}", e,))
             }
         }
         Ok(v) => Ok(v),
