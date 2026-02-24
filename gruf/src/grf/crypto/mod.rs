@@ -40,7 +40,7 @@ pub fn encrypt_file_content(data: &mut Vec<u8>, key: u64, cycle: usize) {
 
 fn swap_nibbles(buffer: &mut Vec<u8>) {
     for b in buffer {
-        *b = (*b << 4) | (*b >> 4);
+        *b = b.rotate_left(4);
     }
 }
 
@@ -56,7 +56,7 @@ fn remove_zero_padding(vec: &mut Vec<u8>) {
 fn add_zero_padding(vec: &mut Vec<u8>) {
     let padding = DES_BLOCK_SIZE - (vec.len() % DES_BLOCK_SIZE);
     if padding != DES_BLOCK_SIZE {
-        vec.extend(std::iter::repeat(0).take(padding));
+        vec.extend(std::iter::repeat_n(0, padding));
     }
     // Ensure we have at least one block? Or maybe just ensure it is multiple of 8.
     // If it was already multiple of 8, do we add another block of zeros?

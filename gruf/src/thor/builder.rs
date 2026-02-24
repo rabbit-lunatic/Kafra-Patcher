@@ -97,7 +97,7 @@ impl<W: Write + Seek> ThorArchiveBuilder<W> {
         let compressed_data = encoder.finish()?;
         let compressed_data_size = compressed_data.len();
 
-        let offset = self.obj.seek(SeekFrom::Current(0))?;
+        let offset = self.obj.stream_position()?;
         let mut compressed_reader = Cursor::new(compressed_data);
         let _ = io::copy(&mut compressed_reader, self.obj.by_ref())?;
         self.entries.insert(
@@ -174,7 +174,7 @@ impl<W: Write + Seek> ThorArchiveBuilder<W> {
         encoder.write_all(&table)?;
         let compressed_table = encoder.finish()?;
         let compressed_table_size = compressed_table.len();
-        let table_offset = self.obj.seek(SeekFrom::Current(0))?;
+        let table_offset = self.obj.stream_position()?;
         // Write table's content
         self.obj.write_all(&compressed_table)?;
         // Return file table's offset
@@ -265,14 +265,10 @@ fn serialize_thor_slice_into<W: Write>(mut writer: W, slice: &[u8]) -> Result<()
 }
 
 /// Computes a CRC32 checksum from a reader.
-fn copy_and_measure_crc32<R: ?Sized, W: ?Sized>(
+fn copy_and_measure_crc32<R: Read + ?Sized, W: Write + ?Sized>(
     reader: &mut R,
     writer: &mut W,
-) -> Result<(u64, u32)>
-where
-    R: Read,
-    W: Write,
-{
+) -> Result<(u64, u32)> {
     // Use an 8KiB buffer
     let mut buf = [0_u8; 8 * 1024];
     let mut digest = crc32::Digest::new(crc::crc32::IEEE);

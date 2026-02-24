@@ -28,7 +28,7 @@ pub fn patch_list_from_string(content: &str) -> ThorPatchList {
     let vec_lines: Vec<&str> = content.lines().collect();
     let mut sorted_patch_list: ThorPatchList = vec_lines
         .into_iter()
-        .filter_map(|elem| ThorPatchInfo::from_string(&elem))
+        .filter_map(|elem| ThorPatchInfo::from_string(elem))
         .collect();
     // Sort patch list by index
     sorted_patch_list.sort_by(|a, b| a.index.cmp(&b.index));
@@ -46,8 +46,8 @@ impl ThorPatchInfo {
     /// Returns a PatchInfo struct in case of success.
     /// Returns None in case of failure
     fn from_string(line: &str) -> Option<ThorPatchInfo> {
-        let words: Vec<_> = line.trim().split_whitespace().collect();
-        let index_str = words.get(0)?;
+        let words: Vec<_> = line.split_whitespace().collect();
+        let index_str = words.first()?;
         let index = match str::parse(index_str) {
             Ok(v) => v,
             Err(_) => {
@@ -68,7 +68,7 @@ fn parse_data_integrity_info(data: &str) -> HashMap<&str, u32> {
         .into_iter()
         .filter_map(|line| {
             let words: Vec<&str> = line.trim().split('=').collect();
-            let file_name = words.get(0)?;
+            let file_name = words.first()?;
             let hash_str = words.get(1)?;
             let hash = match u32::from_str_radix(hash_str.trim_start_matches("0x"), 16) {
                 Ok(v) => v,
