@@ -198,7 +198,7 @@ fn round(input: u64, key: u64) -> u64 {
 }
 
 fn f(input: u64, key: u64) -> u64 {
-    let mut val = e(input as u64);
+    let mut val = e(input);
     val ^= key;
     val = apply_sboxes(val);
     p(val)
@@ -219,12 +219,12 @@ impl Des {
     pub fn encrypt_block_1_round(&self, mut data: u64) -> u64 {
         data = ip(data);
         data = round(data, *self.keys.first().unwrap());
-        fp((data << 32) | (data >> 32))
+        fp(data.rotate_right(32))
     }
 
     pub fn decrypt_block_1_round(&self, mut data: u64) -> u64 {
         data = ip(data);
         data = round(data, *self.keys.last().unwrap());
-        fp((data << 32) | (data >> 32))
+        fp(data.rotate_right(32))
     }
 }

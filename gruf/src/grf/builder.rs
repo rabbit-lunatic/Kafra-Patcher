@@ -48,7 +48,7 @@ struct SerializableGrfFileEntry200 {
 
 impl<W: Write + Seek> GrfArchiveBuilder<W> {
     pub fn create(mut obj: W, version_major: u32, version_minor: u32) -> Result<Self> {
-        let start_offset = obj.seek(io::SeekFrom::Current(0))?;
+        let start_offset = obj.stream_position()?;
         // Placeholder for the GRF header
         obj.write_all(&[0; GRF_HEADER_SIZE])?;
         Ok(Self {
