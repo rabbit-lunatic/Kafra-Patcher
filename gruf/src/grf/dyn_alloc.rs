@@ -22,10 +22,10 @@ pub fn list_available_chunks(archive: &mut GrfArchive) -> Result<AvailableChunkL
 
     let mut entries: Vec<&GrfFileEntry> = archive.get_entries().collect();
     entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
-    
+
     let mut chunks_sizes = BTreeSet::new();
     let mut available_chunks = BTreeMap::new();
-    
+
     // Start tracking from the end of the header
     let mut current_offset = GRF_HEADER_SIZE as u64;
 
@@ -34,14 +34,11 @@ pub fn list_available_chunks(archive: &mut GrfArchive) -> Result<AvailableChunkL
             // Found a hole
             let hole_size = (entry.offset - current_offset) as usize;
             if hole_size > 0 {
-                 chunks_sizes.insert((hole_size, current_offset));
-                 available_chunks.insert(
-                    current_offset,
-                    AvailableChunk { size: hole_size },
-                );
+                chunks_sizes.insert((hole_size, current_offset));
+                available_chunks.insert(current_offset, AvailableChunk { size: hole_size });
             }
         }
-        
+
         let entry_end = entry.offset + entry.size_compressed_aligned as u64;
         if entry_end > current_offset {
             current_offset = entry_end;

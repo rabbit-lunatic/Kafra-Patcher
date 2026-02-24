@@ -1,13 +1,13 @@
+use serde::Deserialize;
 use std::path::{Path, PathBuf};
-use tinyfiledialogs as tfd;
-use wry::webview::{WebView, WebViewBuilder};
 use tao::{
+    dpi::LogicalSize,
     event::{Event, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
-    dpi::LogicalSize,
 };
-use serde::Deserialize;
+use tinyfiledialogs as tfd;
+use wry::webview::{WebView, WebViewBuilder};
 
 use crate::embed::embed_config_in_exe;
 use crate::generator::generate_patch_from_definition;
@@ -24,7 +24,7 @@ enum UiEvent {
 pub fn run_ui() {
     let event_loop = EventLoop::<UiEvent>::with_user_event();
     let proxy = event_loop.create_proxy();
-    
+
     let window = WindowBuilder::new()
         .with_title("MKPatch Tools")
         .with_inner_size(LogicalSize::new(600.0, 700.0))
@@ -55,7 +55,9 @@ pub fn run_ui() {
         .unwrap()
         .with_html(html_content)
         .unwrap()
-        .with_initialization_script("window.external = { invoke: function(s) { window.ipc.postMessage(s); } };")
+        .with_initialization_script(
+            "window.external = { invoke: function(s) { window.ipc.postMessage(s); } };",
+        )
         .with_ipc_handler(handler)
         .build()
         .unwrap();
@@ -67,34 +69,33 @@ pub fn run_ui() {
             Event::UserEvent(ui_event) => match ui_event {
                 UiEvent::SelectFiles => {
                     handle_select_files(&webview);
-                },
+                }
                 UiEvent::SelectExe => {
                     handle_select_exe(&webview);
-                },
+                }
                 UiEvent::SelectYml => {
                     handle_select_yml(&webview);
-                },
+                }
                 UiEvent::Generate(json_str) => {
                     handle_generate(&webview, &json_str);
-                },
+                }
                 UiEvent::Embed(json_str) => {
                     handle_embed(&webview, &json_str);
                 }
             },
-            Event::WindowEvent { event: WindowEvent::CloseRequested, .. } => {
+            Event::WindowEvent {
+                event: WindowEvent::CloseRequested,
+                ..
+            } => {
                 *control_flow = ControlFlow::Exit;
-            },
-            _ => ()
+            }
+            _ => (),
         }
     });
 }
 
 fn handle_select_files(webview: &WebView) {
-    let files = tfd::open_file_dialog_multi(
-        "Select Files to Patch",
-        "",
-        None,
-    );
+    let files = tfd::open_file_dialog_multi("Select Files to Patch", "", None);
 
     if let Some(files) = files {
         let files_json = serde_json::to_string(&files).unwrap_or("[]".to_string());
@@ -141,21 +142,23 @@ fn handle_embed(webview: &WebView, json_str: &str) {
     let input: EmbedInput = match serde_json::from_str(json_str) {
         Ok(i) => i,
         Err(e) => {
-            let _ = webview.evaluate_script(&format!("logMessage('Erro ao processar input: {}')", e));
+            let _ =
+                webview.evaluate_script(&format!("logMessage('Erro ao processar input: {}')", e));
             return;
         }
     };
 
     let exe_path = PathBuf::from(&input.exe_path);
     let yml_path = PathBuf::from(&input.yml_path);
-    
+
     // Gerar nome do arquivo de saída
     let output_filename = exe_path
         .file_stem()
         .map(|s| format!("{}_embedded.exe", s.to_string_lossy()))
         .unwrap_or_else(|| "output_embedded.exe".to_string());
-    
-    let output_path = exe_path.parent()
+
+    let output_path = exe_path
+        .parent()
         .map(|p| p.join(&output_filename))
         .unwrap_or_else(|| PathBuf::from(&output_filename));
 
@@ -165,18 +168,22 @@ fn handle_embed(webview: &WebView, json_str: &str) {
         Ok(_) => {
             let output_display = output_path.display().to_string().replace('\\', "\\\\");
             let _ = webview.evaluate_script(&format!(
-                "logMessage('✅ Sucesso! Arquivo gerado: {}')", 
+                "logMessage('✅ Sucesso! Arquivo gerado: {}')",
                 output_display
             ));
             let _ = webview.evaluate_script(&format!(
                 "alert('Config embutido com sucesso!\\n\\nArquivo gerado:\\n{}')",
-                output_path.file_name().unwrap_or_default().to_string_lossy()
+                output_path
+                    .file_name()
+                    .unwrap_or_default()
+                    .to_string_lossy()
             ));
-        },
+        }
         Err(e) => {
             let error_msg = format!("{:#}", e).replace('"', "'");
             let _ = webview.evaluate_script(&format!("logMessage('❌ Erro: {}')", error_msg));
-            let _ = webview.evaluate_script(&format!("alert('Erro ao embutir config:\\n{}')", error_msg));
+            let _ = webview
+                .evaluate_script(&format!("alert('Erro ao embutir config:\\n{}')", error_msg));
         }
     }
 }
@@ -203,20 +210,28 @@ fn handle_generate(webview: &WebView, json_str: &str) {
         return;
     }
 
-    let entries_mapped: Vec<PatchEntry> = input.files.iter().map(|f| {
-        let path = Path::new(f);
-        let filename = path.file_name().unwrap().to_string_lossy().to_string();
-        PatchEntry {
-            relative_path: f.clone(),
-            is_removed: false,
-            in_grf_path: Some(filename),
-        }
-    }).collect();
-    
+    let entries_mapped: Vec<PatchEntry> = input
+        .files
+        .iter()
+        .map(|f| {
+            let path = Path::new(f);
+            let filename = path.file_name().unwrap().to_string_lossy().to_string();
+            PatchEntry {
+                relative_path: f.clone(),
+                is_removed: false,
+                in_grf_path: Some(filename),
+            }
+        })
+        .collect();
+
     let def_for_gen = PatchDefinition {
         include_checksums: true,
         use_grf_merging: input.merge_grf,
-        target_grf_name: if input.target_grf.is_empty() { None } else { Some(input.target_grf) },
+        target_grf_name: if input.target_grf.is_empty() {
+            None
+        } else {
+            Some(input.target_grf)
+        },
         entries: entries_mapped,
     };
 
@@ -228,13 +243,16 @@ fn handle_generate(webview: &WebView, json_str: &str) {
     };
 
     let _ = webview.evaluate_script("logMessage('Generating patch...')");
-    
+
     match generate_patch_from_definition(def_for_gen, ".", &output_path) {
         Ok(_) => {
             let output_display = output_path.display().to_string().replace("\\", "\\\\");
-            let _ = webview.evaluate_script(&format!("logMessage('Success! Patch saved to: {}')", output_display));
+            let _ = webview.evaluate_script(&format!(
+                "logMessage('Success! Patch saved to: {}')",
+                output_display
+            ));
             let _ = webview.evaluate_script("alert('Patch Generated Successfully!')");
-        },
+        }
         Err(e) => {
             let _ = webview.evaluate_script(&format!("logMessage('Error: {}')", e));
         }

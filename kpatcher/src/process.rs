@@ -75,7 +75,7 @@ mod windows {
 
         // Note: It seems `path` has to be absolute for the class overwrite to work
         let exe_path = std::env::current_dir()?.join(path.as_ref());
-        
+
         // Get the directory of the executable to use as the working directory
         // This is critical for the game to find its DLLs and dependencies
         let exe_dir = exe_path.parent().map(|p| p.to_path_buf());
@@ -84,7 +84,7 @@ mod windows {
             .and_then(|p| p.to_str())
             .map(|s| to_u16s(s).ok())
             .flatten();
-        
+
         let exe_path = to_u16s(exe_path.to_str().unwrap_or(""))?;
         let parameter = to_u16s(parameter)?;
         let class = to_u16s("exefile")?;

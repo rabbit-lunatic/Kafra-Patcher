@@ -4,23 +4,22 @@ use std::io::{BufReader, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 use super::get_patcher_name;
+use aes_gcm::{
+    aead::{Aead, KeyInit},
+    Aes256Gcm,
+    Nonce, // Or `Key`
+};
 use anyhow::{Context, Result};
 use flate2::read::GzDecoder;
 use serde::Deserialize;
-use aes_gcm::{
-    aead::{Aead, KeyInit},
-    Aes256Gcm, Nonce // Or `Key`
-};
 
 /// Marker to identify embedded config at the end of the EXE
 const CONFIG_MARKER: &[u8; 4] = b"KCFG";
 
 /// XOR mask used to obfuscate the encryption key in the binary.
 const XOR_MASK: [u8; 32] = [
-    0xA7, 0x3B, 0x5C, 0x9E, 0x12, 0xF4, 0x68, 0xD1,
-    0x83, 0x47, 0xB2, 0x0F, 0xE5, 0x6A, 0x91, 0xC3,
-    0x2D, 0x78, 0xF0, 0x14, 0x56, 0xAB, 0x39, 0xE7,
-    0x04, 0x8C, 0xD5, 0x63, 0xB9, 0x1E, 0x72, 0x4F,
+    0xA7, 0x3B, 0x5C, 0x9E, 0x12, 0xF4, 0x68, 0xD1, 0x83, 0x47, 0xB2, 0x0F, 0xE5, 0x6A, 0x91, 0xC3,
+    0x2D, 0x78, 0xF0, 0x14, 0x56, 0xAB, 0x39, 0xE7, 0x04, 0x8C, 0xD5, 0x63, 0xB9, 0x1E, 0x72, 0x4F,
 ];
 
 /// Obfuscated encryption key (result of original key XOR'd with XOR_MASK).
@@ -176,7 +175,8 @@ fn extract_embedded_config() -> Result<PatcherConfiguration> {
     // Descriptografar
     let key = derive_encryption_key();
     let cipher = Aes256Gcm::new(aes_gcm::Key::<Aes256Gcm>::from_slice(&key));
-    let compressed_data = cipher.decrypt(nonce, ciphertext)
+    let compressed_data = cipher
+        .decrypt(nonce, ciphertext)
         .map_err(|e| anyhow::anyhow!("Failed to decrypt embedded config: {}", e))?;
 
     // Descomprimir

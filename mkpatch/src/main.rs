@@ -1,17 +1,17 @@
-mod patch_definition;
-mod generator;
-mod ui;
 pub mod embed;
+mod generator;
+mod patch_definition;
+mod ui;
 
 use std::path::PathBuf;
 use std::{env, process};
 
 use anyhow::{anyhow, Context, Result};
+use generator::generate_patch_from_definition;
 use log::LevelFilter;
-use patch_definition::{parse_patch_definition};
+use patch_definition::parse_patch_definition;
 use simple_logger::SimpleLogger;
-use structopt::StructOpt;
-use generator::generate_patch_from_definition; // Import from new module
+use structopt::StructOpt; // Import from new module
 
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 const PKG_AUTHORS: &str = env!("CARGO_PKG_AUTHORS");
@@ -120,7 +120,6 @@ fn main() {
         }
     }
 }
-
 
 fn init_logger(verbose: bool) -> Result<()> {
     let level_filter = if verbose {

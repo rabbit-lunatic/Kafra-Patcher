@@ -278,7 +278,8 @@ async fn find_available_patch_server(
             .iter()
             .find(|s| &s.name == preferred_server_name);
         if let Some(preferred_server) = preferred_server {
-            if let Ok((patch_list, patch_url)) = probe_patch_server(client, preferred_server).await {
+            if let Ok((patch_list, patch_url)) = probe_patch_server(client, preferred_server).await
+            {
                 return Ok((patch_list, patch_url));
             } else {
                 log::warn!("'{}' is unavailable", preferred_server_name);
@@ -311,7 +312,10 @@ async fn find_available_patch_server(
 /// Checks whether a patch server is up or not.
 /// Returns the list of patches served by the server as well as the URL to
 /// download them from.
-async fn probe_patch_server(client: &reqwest::Client, server_info: &PatchServerInfo) -> Result<(ThorPatchList, Url)> {
+async fn probe_patch_server(
+    client: &reqwest::Client,
+    server_info: &PatchServerInfo,
+) -> Result<(ThorPatchList, Url)> {
     // Parse URLs
     let patch_list_url = Url::parse(server_info.plist_url.as_str())
         .with_context(|| "Failed to parse 'plist_url'")?;
@@ -482,9 +486,10 @@ async fn download_patches_concurrent_inner(
         // Check the archive's integrity if required
         if ensure_integrity {
             let path_to_check = local_file_path.clone();
-            let validity_check = tokio::task::spawn_blocking(move || is_archive_valid(&path_to_check))
-                .await
-                .map_err(|e| anyhow!("Integrity check task failed: {}", e))?;
+            let validity_check =
+                tokio::task::spawn_blocking(move || is_archive_valid(&path_to_check))
+                    .await
+                    .map_err(|e| anyhow!("Integrity check task failed: {}", e))?;
 
             let context = || {
                 format!(
@@ -605,25 +610,24 @@ async fn apply_patches(
         let patch_name = pending_patch.info.file_name;
         let patch_name_clone = patch_name.clone();
         log::info!("Processing {}", patch_name);
-            
+
         let local_file_path = pending_patch.local_file_path;
         let config_clone = config.clone();
         let cwd_clone = current_working_dir.clone();
-            
+
         let apply_result = tokio::task::spawn_blocking(move || {
             apply_patch(local_file_path, &config_clone, &cwd_clone)
         })
         .await
-        .map_err(|e| InterruptibleFnError::Err(format!(
-            "Task join error for '{}': {}.",
-            patch_name_clone, e
-        )))?;
-        
-        apply_result.map_err(|e| {
+        .map_err(|e| {
             InterruptibleFnError::Err(format!(
-                "Failed to apply patch '{}': {}.",
-                patch_name, e
+                "Task join error for '{}': {}.",
+                patch_name_clone, e
             ))
+        })?;
+
+        apply_result.map_err(|e| {
+            InterruptibleFnError::Err(format!("Failed to apply patch '{}': {}.", patch_name, e))
         })?;
         // Update the cache file with the last successful patch's index
         if let Err(e) = write_cache_file(
@@ -705,8 +709,12 @@ fn apply_patch(
 
         // Verificar integridade do GRF após patch (se check_integrity estiver habilitado)
         if config.patching.check_integrity {
-            verify_grf_integrity(&target_grf_path)
-                .with_context(|| format!("Verificação de integridade falhou para: {}", target_grf_path.display()))?;
+            verify_grf_integrity(&target_grf_path).with_context(|| {
+                format!(
+                    "Verificação de integridade falhou para: {}",
+                    target_grf_path.display()
+                )
+            })?;
         }
 
         // temp_dir will be deleted when it goes out of scope
@@ -737,8 +745,12 @@ fn apply_patch(
 
             // Verificar integridade do GRF após patch (se check_integrity estiver habilitado)
             if config.patching.check_integrity {
-                verify_grf_integrity(&target_grf_path)
-                    .with_context(|| format!("Verificação de integridade falhou para: {}", target_grf_path.display()))?;
+                verify_grf_integrity(&target_grf_path).with_context(|| {
+                    format!(
+                        "Verificação de integridade falhou para: {}",
+                        target_grf_path.display()
+                    )
+                })?;
             }
 
             Ok(())
@@ -752,28 +764,35 @@ fn apply_patch(
 /// Verifica a integridade de um arquivo GRF após aplicar patches.
 /// Abre o GRF e verifica se todos os arquivos podem ser lidos corretamente.
 fn verify_grf_integrity(grf_path: impl AsRef<Path>) -> Result<()> {
-    let mut grf_archive = GrfArchive::open(grf_path.as_ref())
-        .with_context(|| format!("Falha ao abrir GRF para verificação: {}", grf_path.as_ref().display()))?;
-    
+    let mut grf_archive = GrfArchive::open(grf_path.as_ref()).with_context(|| {
+        format!(
+            "Falha ao abrir GRF para verificação: {}",
+            grf_path.as_ref().display()
+        )
+    })?;
+
     let file_count = grf_archive.file_count();
     log::trace!("Verificando integridade de {} arquivos no GRF", file_count);
-    
+
     // Verificar se podemos ler as entradas do arquivo
     let entries: Vec<_> = grf_archive.get_entries().cloned().collect();
-    
+
     // Verificar amostra de arquivos para não demorar muito em GRFs grandes
     let sample_size = std::cmp::min(10, entries.len());
     for entry in entries.iter().take(sample_size) {
         // Tentar ler o conteúdo do arquivo
         if entry.size > 0 {
-            grf_archive.read_file_content(&entry.relative_path)
-                .with_context(|| format!(
-                    "Falha ao ler arquivo '{}' do GRF durante verificação de integridade",
-                    entry.relative_path
-                ))?;
+            grf_archive
+                .read_file_content(&entry.relative_path)
+                .with_context(|| {
+                    format!(
+                        "Falha ao ler arquivo '{}' do GRF durante verificação de integridade",
+                        entry.relative_path
+                    )
+                })?;
         }
     }
-    
+
     log::trace!("Verificação de integridade concluída com sucesso");
     Ok(())
 }

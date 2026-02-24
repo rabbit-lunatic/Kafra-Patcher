@@ -137,7 +137,8 @@ fn apply_grf_to_grf_oop(
     let build_result = (|| -> Result<()> {
         let grf_file = fs::File::create(target_grf_path.as_ref())?;
         // Use original GRF version to preserve encryption
-        let mut builder = GrfArchiveBuilder::create(grf_file, original_version_major, original_version_minor)?;
+        let mut builder =
+            GrfArchiveBuilder::create(grf_file, original_version_major, original_version_minor)?;
         for (relative_path, entry) in merge_entries {
             match entry.source {
                 MergeEntrySource::TargetGrf => {
@@ -206,14 +207,14 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
 
     // Prepare file entries that'll be used to make the patched GRF
     let mut merge_entries: HashMap<String, MergeEntry> = HashMap::new();
-    
+
     // Add files from the original archive while discarding files removed in the patch
     let mut grf_archive = GrfArchive::open(&backup_file_path)?;
-    
+
     // Preserve original GRF version
     let original_version_major = grf_archive.version_major();
     let original_version_minor = grf_archive.version_minor();
-    
+
     for entry in grf_archive.get_entries() {
         if let Some(e) = thor_archive.get_file_entry(&entry.relative_path) {
             if e.is_removed {
@@ -250,7 +251,8 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
     let build_result = (|| -> Result<()> {
         let grf_file = fs::File::create(grf_file_path.as_ref())?;
         // Use original GRF version to preserve encryption
-        let mut builder = GrfArchiveBuilder::create(grf_file, original_version_major, original_version_minor)?;
+        let mut builder =
+            GrfArchiveBuilder::create(grf_file, original_version_major, original_version_minor)?;
         for (relative_path, entry) in merge_entries {
             match entry.source {
                 MergeEntrySource::TargetGrf => {
