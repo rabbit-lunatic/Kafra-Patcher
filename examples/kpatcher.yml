@@ -7,6 +7,7 @@ window:
   # Funcionalidades extras:
   frameless: true # Oculta bordas e barra de título
   border_radius: 20 # Raio da borda da janela (em pixels)
+  #dllwebview: wbkafra.dll # (Opcional) Nome ou caminho da DLL do WebView2Loader customizado
 
 # Comandos JavaScript para UI (janelas sem borda)
 # Para criar novos botões, use o onclick="external.invoke('comando')" no seu HTML.

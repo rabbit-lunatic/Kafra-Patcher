@@ -71,6 +71,21 @@ fn main() -> Result<()> {
         Ok(v) => v,
     };
 
+    #[cfg(windows)]
+    if let Some(dll_name) = &config.window.dllwebview {
+        use std::os::windows::ffi::OsStrExt;
+        let wide_name: Vec<u16> = std::ffi::OsStr::new(dll_name)
+            .encode_wide()
+            .chain(std::iter::once(0))
+            .collect();
+        let handle = unsafe { winapi::um::libloaderapi::LoadLibraryW(wide_name.as_ptr()) };
+        if handle.is_null() {
+            log::warn!("Failed to load custom dllwebview: {}", dll_name);
+        } else {
+            log::info!("Successfully loaded custom dllwebview: {}", dll_name);
+        }
+    }
+
     // Resolve relative path for index_url if it's not a remote URL or absolute file URI
     if !config.web.index_url.starts_with("http://")
         && !config.web.index_url.starts_with("https://")

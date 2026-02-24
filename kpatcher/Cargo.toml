@@ -46,6 +46,7 @@ winapi = { version = "0.3.6", features = [
     "winuser",
     "wingdi",
     "dwmapi",
+    "libloaderapi",
 ] }
 
 [target.'cfg(windows)'.build-dependencies]
