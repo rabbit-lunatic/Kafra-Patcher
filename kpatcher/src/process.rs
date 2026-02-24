@@ -47,7 +47,7 @@ mod windows {
     fn to_u16s<S: AsRef<OsStr>>(s: S) -> Result<Vec<u16>> {
         fn inner(s: &OsStr) -> Result<Vec<u16>> {
             let mut maybe_result: Vec<u16> = s.encode_wide().collect();
-            if maybe_result.iter().any(|&u| u == 0) {
+            if maybe_result.contains(&0) {
                 return Err(anyhow!("strings passed to WinAPI cannot contain NULs"));
             }
             maybe_result.push(0);
@@ -82,8 +82,7 @@ mod windows {
         let exe_dir_u16 = exe_dir
             .as_ref()
             .and_then(|p| p.to_str())
-            .map(|s| to_u16s(s).ok())
-            .flatten();
+            .and_then(|s| to_u16s(s).ok());
 
         let exe_path = to_u16s(exe_path.to_str().unwrap_or(""))?;
         let parameter = to_u16s(parameter)?;

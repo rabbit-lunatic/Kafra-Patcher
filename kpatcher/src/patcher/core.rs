@@ -75,34 +75,34 @@ async fn update_game(
     patcher_thread_rx: &mut flume::Receiver<PatcherCommand>,
 ) {
     // Try taking the update lock
-    match take_update_lock().with_context(|| "Failed to take the update lock") {
+    let lock_file = match take_update_lock().with_context(|| "Failed to take the update lock") {
+        Ok(f) => f,
         Err(err) => {
             log::error!("{:#}", err);
             ui_controller.dispatch_patching_status(PatchingStatus::Error(format!("{:#}", err)));
             return;
         }
-        Ok(lock_file) => {
-            // Tell the UI and other processes that we're currently working
-            ui_controller.set_patch_in_progress(true);
-            let _guard = scopeguard::guard((), |_| {
-                let _ = lock_file.unlock();
-                ui_controller.set_patch_in_progress(false);
-            });
+    };
 
-            let res = interruptible_update_routine(ui_controller, config, patcher_thread_rx).await;
-            match res {
-                Err(err) => {
-                    log::error!("{:#}", err);
-                    ui_controller
-                        .dispatch_patching_status(PatchingStatus::Error(format!("{:#}", err)));
-                    // Nota: play_with_error apenas habilita o botão Play no JavaScript,
-                    // o jogo só será lançado quando o usuário clicar no botão.
-                }
-                Ok(()) => {
-                    ui_controller.dispatch_patching_status(PatchingStatus::Ready);
-                    log::info!("Patching finished!");
-                }
-            }
+    // Tell the UI and other processes that we're currently working
+    ui_controller.set_patch_in_progress(true);
+    let _guard = scopeguard::guard((), |_| {
+        let _ = lock_file.unlock();
+        ui_controller.set_patch_in_progress(false);
+    });
+
+    let res = interruptible_update_routine(ui_controller, config, patcher_thread_rx).await;
+    match res {
+        Err(err) => {
+            log::error!("{:#}", err);
+            ui_controller
+                .dispatch_patching_status(PatchingStatus::Error(format!("{:#}", err)));
+            // Nota: play_with_error apenas habilita o botão Play no JavaScript,
+            // o jogo só será lançado quando o usuário clicar no botão.
+        }
+        Ok(()) => {
+            ui_controller.dispatch_patching_status(PatchingStatus::Ready);
+            log::info!("Patching finished!");
         }
     }
 }
@@ -384,6 +384,7 @@ fn get_instance_asset_file_name(extension: impl AsRef<std::ffi::OsStr>) -> Resul
 /// contained in the 'patch_url' argument.
 ///
 /// This function is interruptible.
+#[allow(clippy::too_many_arguments)]
 async fn download_patches_concurrent(
     client: &reqwest::Client,
     patch_url: Url,
@@ -529,7 +530,7 @@ fn is_archive_valid(archive_path: impl AsRef<Path>) -> Result<bool> {
                 // Only consider this an error if the integrity file was found
                 Err(anyhow!(
                     "Archive's integrity file is invalid: {}",
-                    e.to_string(),
+                    e,
                 ))
             }
         }

@@ -3,7 +3,6 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 use gruf::thor::ThorArchiveBuilder;
-use log;
 use walkdir::WalkDir;
 
 use crate::patch_definition::PatchDefinition;
