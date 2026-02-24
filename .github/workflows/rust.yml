@@ -12,22 +12,10 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build-linux:
-    runs-on: ubuntu-22.04
+  build:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.0-dev \
-            build-essential \
-            curl \
-            libssl-dev \
-            libgtk-3-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev
 
       - name: Check formatting
         run: cargo fmt --check
@@ -41,16 +29,12 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
 
-  build-windows:
-    runs-on: windows-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    steps:
-      - uses: actions/checkout@v4
-
       - name: Build (Release)
+        if: startsWith(github.ref, 'refs/tags/')
         run: cargo build --release --verbose
 
       - name: Prepare Release Files
+        if: startsWith(github.ref, 'refs/tags/')
         shell: pwsh
         run: |
           mkdir dist
@@ -61,6 +45,7 @@ jobs:
           xcopy examples\bootstrap dist\bootstrap /E /I
 
       - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
