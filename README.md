@@ -2,7 +2,8 @@
 
 [![Rust](https://github.com/ArturllVale/Kafra-Patcher/actions/workflows/rust.yml/badge.svg)](https://github.com/ArturllVale/Kafra-Patcher/actions/workflows/rust.yml)
 [![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)
-[![Windows](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey)]()
+[![Windows](https://img.shields.io/badge/platform-Windows-lightgrey)]()
+
 
 > Patcher customizável e multiplataforma para clientes Ragnarok Online, baseado no antigo projeto **rpatchur**.
 

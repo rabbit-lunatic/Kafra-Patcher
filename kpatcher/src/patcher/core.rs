@@ -603,9 +603,27 @@ async fn apply_patches(
         process_incoming_commands(patching_thread_rx)?;
 
         let patch_name = pending_patch.info.file_name;
+        let patch_name_clone = patch_name.clone();
         log::info!("Processing {}", patch_name);
-        apply_patch(pending_patch.local_file_path, config, &current_working_dir).map_err(|e| {
-            InterruptibleFnError::Err(format!("Failed to apply patch '{}': {}.", patch_name, e))
+            
+        let local_file_path = pending_patch.local_file_path;
+        let config_clone = config.clone();
+        let cwd_clone = current_working_dir.clone();
+            
+        let apply_result = tokio::task::spawn_blocking(move || {
+            apply_patch(local_file_path, &config_clone, &cwd_clone)
+        })
+        .await
+        .map_err(|e| InterruptibleFnError::Err(format!(
+            "Task join error for '{}': {}.",
+            patch_name_clone, e
+        )))?;
+        
+        apply_result.map_err(|e| {
+            InterruptibleFnError::Err(format!(
+                "Failed to apply patch '{}': {}.",
+                patch_name, e
+            ))
         })?;
         // Update the cache file with the last successful patch's index
         if let Err(e) = write_cache_file(

@@ -433,6 +433,7 @@ mod tests {
     #[test]
     fn test_open_grf_container() {
         let grf_dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/tests/grf");
+        println!(">>> grf_dir_path: {:?}", grf_dir_path);
         let expected_content: HashMap<&str, (usize, u64)> = [
             (
                 "data\\06guild_r.gat",
