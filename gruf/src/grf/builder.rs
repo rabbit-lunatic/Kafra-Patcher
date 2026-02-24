@@ -79,10 +79,7 @@ impl<W: Write + Seek> GrfArchiveBuilder<W> {
         // If entry is encrypted, FORCE incompatibility -> we must decrypt (read_file_content) and re-compress (add_file)
         // because we don't know the key of the source GRF inside `import_raw_entry_from_grf` easily without extracting it,
         // and we want target GRF to be unencrypted (or re-encrypted if implemented later, but simpler to store unencrypted).
-        let is_encrypted = match entry.encryption {
-            crate::grf::reader::GrfFileEncryption::Encrypted(_) => true,
-            _ => false,
-        };
+        let is_encrypted = matches!(entry.encryption, crate::grf::reader::GrfFileEncryption::Encrypted(_));
 
         if !compatible || is_encrypted {
             let content = archive.read_file_content(&relative_path)?;
@@ -175,7 +172,7 @@ impl<W: Write + Seek> GrfArchiveBuilder<W> {
             // Pad to 8 bytes
             let padding = 8 - (compressed_data.len() % 8);
             if padding != 8 {
-                compressed_data.extend(std::iter::repeat(0).take(padding));
+                compressed_data.extend(std::iter::repeat_n(0, padding));
             }
             size_compressed_aligned = compressed_data.len();
 
@@ -261,13 +258,13 @@ impl<W: Write + Seek> GrfArchiveBuilder<W> {
             table.write_all(&encrypted_name)?;
             table.write_all(&[0u8; 4])?;
 
-            let size_tot_enc = (entry.size_compressed as u32)
+            let size_tot_enc = entry.size_compressed
                 .wrapping_add(entry.size)
                 .wrapping_add(0x02CB);
             table.write_all(&size_tot_enc.to_le_bytes())?;
 
             let size_compressed_aligned_enc =
-                (entry.size_compressed_aligned as u32).wrapping_add(0x92CB);
+                entry.size_compressed_aligned.wrapping_add(0x92CB);
             table.write_all(&size_compressed_aligned_enc.to_le_bytes())?;
 
             table.write_all(&entry.size.to_le_bytes())?;
@@ -298,7 +295,7 @@ impl<W: Write + Seek> GrfArchiveBuilder<W> {
                 entry_type: 1,
                 offset: (entry.offset - GRF_HEADER_SIZE as u64) as u32,
             };
-            serialize_as_win1252_cstr_into(&mut table, &relative_path)?;
+            serialize_as_win1252_cstr_into(&mut table, relative_path)?;
             bincode::serialize_into(&mut table, &grf_file_entry)?;
         }
         // Compress the table
