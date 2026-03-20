@@ -198,6 +198,50 @@ impl GrfArchive {
     pub fn get_entries(&self) -> impl Iterator<Item = &'_ GrfFileEntry> {
         self.container.entries.values()
     }
+
+    /// Takes the ownership of the entries from the archive.
+    /// Leaving the archive entries empty.
+    pub fn take_entries(&mut self) -> std::collections::hash_map::IntoValues<String, GrfFileEntry> {
+        std::mem::take(&mut self.container.entries).into_values()
+    }
+
+    pub fn get_entry_raw_data_by_entry(&mut self, file_entry: &GrfFileEntry) -> Result<Vec<u8>> {
+        if file_entry.size == 0 {
+            return Ok(vec![]);
+        }
+        self.obj.seek(SeekFrom::Start(file_entry.offset))?;
+        let mut content: Vec<u8> = Vec::with_capacity(file_entry.size_compressed_aligned);
+        let mut file_chunk = self.obj.by_ref().take(file_entry.size_compressed_aligned as u64);
+        file_chunk.read_to_end(&mut content)?;
+        Ok(content)
+    }
+
+    pub fn read_file_content_by_entry(&mut self, file_entry: &GrfFileEntry) -> Result<Vec<u8>> {
+        if file_entry.size == 0 {
+            return Ok(vec![]);
+        }
+        let mut content = self.get_entry_raw_data_by_entry(file_entry)?;
+        match file_entry.encryption {
+            GrfFileEncryption::Unencrypted => {}
+            GrfFileEncryption::Encrypted(cycle) => {
+                let key_buffer: [u8; 8] = self
+                    .container
+                    .header
+                    .key
+                    .get(0..8)
+                    .unwrap_or(&[0; 8])
+                    .try_into()
+                    .unwrap();
+                let key = u64::from_le_bytes(key_buffer);
+                decrypt_file_content(&mut content, key, cycle);
+            }
+        }
+        // Decompress the content with zlib
+        let mut decoder = ZlibDecoder::new(content.as_slice());
+        let mut decompressed_content = Vec::new();
+        decoder.read_to_end(&mut decompressed_content)?;
+        Ok(decompressed_content)
+    }
 }
 
 #[derive(Debug, PartialEq, Eq)]

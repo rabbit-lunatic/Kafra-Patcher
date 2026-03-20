@@ -53,12 +53,13 @@ fn apply_grf_to_grf_ip(
     source_grf: &mut GrfArchive,
 ) -> Result<()> {
     let mut builder = GrfArchiveBuilder::open(target_grf_path)?;
-    let entries: Vec<String> = source_grf
-        .get_entries()
-        .map(|e| e.relative_path.clone())
+    let mut entries: Vec<gruf::grf::GrfFileEntry> = source_grf
+        .take_entries()
         .collect();
-    for path in entries {
-        builder.import_raw_entry_from_grf(source_grf, path)?;
+    // Sort by offset for optimal sequential read performance
+    entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
+    for entry in entries {
+        builder.import_entry_from_grf(source_grf, entry)?;
     }
     Ok(())
 }
