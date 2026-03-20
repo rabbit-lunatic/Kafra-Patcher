@@ -53,9 +53,7 @@ fn apply_grf_to_grf_ip(
     source_grf: &mut GrfArchive,
 ) -> Result<()> {
     let mut builder = GrfArchiveBuilder::open(target_grf_path)?;
-    let mut entries: Vec<gruf::grf::GrfFileEntry> = source_grf
-        .take_entries()
-        .collect();
+    let mut entries: Vec<gruf::grf::GrfFileEntry> = source_grf.take_entries().collect();
     // Sort by offset for optimal sequential read performance
     entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
     for entry in entries {

@@ -211,7 +211,10 @@ impl GrfArchive {
         }
         self.obj.seek(SeekFrom::Start(file_entry.offset))?;
         let mut content: Vec<u8> = Vec::with_capacity(file_entry.size_compressed_aligned);
-        let mut file_chunk = self.obj.by_ref().take(file_entry.size_compressed_aligned as u64);
+        let mut file_chunk = self
+            .obj
+            .by_ref()
+            .take(file_entry.size_compressed_aligned as u64);
         file_chunk.read_to_end(&mut content)?;
         Ok(content)
     }
