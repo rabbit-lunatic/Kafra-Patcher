@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::io::{Read, Seek};
@@ -12,28 +11,6 @@ use gruf::thor::{ThorArchive, ThorFileEntry};
 pub enum GrfPatchingMethod {
     OutOfPlace,
     InPlace,
-}
-
-/// Indicates the type of archive a "file" comes from.
-enum MergeEntrySource {
-    TargetGrf,
-    PatchThor,
-    PatchGrf,
-}
-
-/// Indicates the transformation that should be applied to the data when copied
-/// from a GRF file to another.
-enum DataTransformation {
-    None,
-    // DecompressZlib,
-}
-
-#[allow(dead_code)]
-struct MergeEntry {
-    pub source: MergeEntrySource,
-    pub source_offset: u64,
-    pub data_size: usize,
-    pub transformation: DataTransformation,
 }
 
 /// Patches a GRF file with a THOR archive/patch.
@@ -95,43 +72,33 @@ fn apply_grf_to_grf_oop(
     backup_file_path.set_extension("grf.bak");
     fs::rename(target_grf_path.as_ref(), &backup_file_path)?;
 
-    // Prepare file entries that'll be used to make the patched GRF
-    let mut merge_entries: HashMap<String, MergeEntry> = HashMap::new();
-
     // Add files from the original archive
     let mut target_archive = GrfArchive::open(&backup_file_path)?;
     // Preserve original GRF version
     let original_version_major = target_archive.version_major();
     let original_version_minor = target_archive.version_minor();
 
-    for entry in target_archive.get_entries() {
-        // If file exists in patch, skip it (it will be overwritten)
-        if source_grf.get_file_entry(&entry.relative_path).is_some() {
-            continue;
-        }
-        merge_entries.insert(
-            entry.relative_path.clone(),
-            MergeEntry {
-                source: MergeEntrySource::TargetGrf,
-                source_offset: entry.offset,
-                data_size: entry.size_compressed,
-                transformation: DataTransformation::None,
-            },
-        );
-    }
+    // Process GRF entries directly, skipping those overwritten by the patch
+    let mut target_paths: Vec<(u64, String)> = target_archive
+        .get_entries()
+        .filter_map(|entry| {
+            if source_grf.get_file_entry(&entry.relative_path).is_some() {
+                None
+            } else {
+                Some((entry.offset, entry.relative_path.clone()))
+            }
+        })
+        .collect();
+    // Sort by offset for optimal sequential read performance
+    target_paths.sort_unstable_by(|a, b| a.0.cmp(&b.0));
 
-    // Add files from the patch
-    for entry in source_grf.get_entries() {
-        merge_entries.insert(
-            entry.relative_path.clone(),
-            MergeEntry {
-                source: MergeEntrySource::PatchGrf,
-                source_offset: entry.offset,
-                data_size: entry.size_compressed,
-                transformation: DataTransformation::None,
-            },
-        );
-    }
+    // Process patch entries directly
+    let mut source_paths: Vec<(u64, String)> = source_grf
+        .get_entries()
+        .map(|entry| (entry.offset, entry.relative_path.clone()))
+        .collect();
+    // Sort by offset for optimal sequential read performance
+    source_paths.sort_unstable_by(|a, b| a.0.cmp(&b.0));
 
     // Build the patched GRF; restore backup on failure
     let build_result = (|| -> Result<()> {
@@ -139,18 +106,12 @@ fn apply_grf_to_grf_oop(
         // Use original GRF version to preserve encryption
         let mut builder =
             GrfArchiveBuilder::create(grf_file, original_version_major, original_version_minor)?;
-        for (relative_path, entry) in merge_entries {
-            match entry.source {
-                MergeEntrySource::TargetGrf => {
-                    builder.import_raw_entry_from_grf(&mut target_archive, relative_path)?;
-                }
-                MergeEntrySource::PatchThor => {
-                    unreachable!("Thor patch source in GRF patching");
-                }
-                MergeEntrySource::PatchGrf => {
-                    builder.import_raw_entry_from_grf(source_grf, relative_path)?;
-                }
-            }
+
+        for (_, path) in target_paths {
+            builder.import_raw_entry_from_grf(&mut target_archive, path)?;
+        }
+        for (_, path) in source_paths {
+            builder.import_raw_entry_from_grf(source_grf, path)?;
         }
         Ok(())
     })();
@@ -205,9 +166,6 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
     backup_file_path.set_extension("grf.bak");
     fs::rename(grf_file_path.as_ref(), &backup_file_path)?;
 
-    // Prepare file entries that'll be used to make the patched GRF
-    let mut merge_entries: HashMap<String, MergeEntry> = HashMap::new();
-
     // Add files from the original archive while discarding files removed in the patch
     let mut grf_archive = GrfArchive::open(&backup_file_path)?;
 
@@ -215,37 +173,38 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
     let original_version_major = grf_archive.version_major();
     let original_version_minor = grf_archive.version_minor();
 
-    for entry in grf_archive.get_entries() {
-        if let Some(e) = thor_archive.get_file_entry(&entry.relative_path) {
-            if e.is_removed {
-                continue;
+    // Process GRF entries directly, skipping those removed or overwritten by the patch
+    let mut grf_paths: Vec<(u64, String)> = grf_archive
+        .get_entries()
+        .filter_map(|entry| {
+            if let Some(e) = thor_archive.get_file_entry(&entry.relative_path) {
+                // If the patch has an internal file with the same name, we should keep the GRF one,
+                // because the patch won't overwrite it.
+                if !e.is_removed && e.is_internal() {
+                    return Some((entry.offset, entry.relative_path.clone()));
+                }
+                // Skip if removed or overwritten by the patch
+                return None;
             }
-        }
-        merge_entries.insert(
-            entry.relative_path.clone(),
-            MergeEntry {
-                source: MergeEntrySource::TargetGrf,
-                source_offset: entry.offset,
-                data_size: entry.size_compressed,
-                transformation: DataTransformation::None,
-            },
-        );
-    }
-    // Add files from the patch
-    for entry in thor_archive.get_entries() {
-        if entry.is_removed || entry.is_internal() {
-            continue;
-        }
-        merge_entries.insert(
-            entry.relative_path.clone(),
-            MergeEntry {
-                source: MergeEntrySource::PatchThor,
-                source_offset: entry.offset,
-                data_size: entry.size_compressed,
-                transformation: DataTransformation::None,
-            },
-        );
-    }
+            Some((entry.offset, entry.relative_path.clone()))
+        })
+        .collect();
+    // Sort by offset for optimal sequential read performance
+    grf_paths.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+
+    // Process patch entries directly
+    let mut thor_paths: Vec<(u64, String)> = thor_archive
+        .get_entries()
+        .filter_map(|entry| {
+            if entry.is_removed || entry.is_internal() {
+                None
+            } else {
+                Some((entry.offset, entry.relative_path.clone()))
+            }
+        })
+        .collect();
+    // Sort by offset for optimal sequential read performance
+    thor_paths.sort_unstable_by(|a, b| a.0.cmp(&b.0));
 
     // Build the patched GRF; restore backup on failure
     let build_result = (|| -> Result<()> {
@@ -253,18 +212,12 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
         // Use original GRF version to preserve encryption
         let mut builder =
             GrfArchiveBuilder::create(grf_file, original_version_major, original_version_minor)?;
-        for (relative_path, entry) in merge_entries {
-            match entry.source {
-                MergeEntrySource::TargetGrf => {
-                    builder.import_raw_entry_from_grf(&mut grf_archive, relative_path)?;
-                }
-                MergeEntrySource::PatchThor => {
-                    builder.import_raw_entry_from_thor(thor_archive, relative_path)?;
-                }
-                MergeEntrySource::PatchGrf => {
-                    unreachable!("GRF patch source in Thor patching");
-                }
-            }
+
+        for (_, path) in grf_paths {
+            builder.import_raw_entry_from_grf(&mut grf_archive, path)?;
+        }
+        for (_, path) in thor_paths {
+            builder.import_raw_entry_from_thor(thor_archive, path)?;
         }
         Ok(())
     })();
