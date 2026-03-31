@@ -5,12 +5,11 @@ mod process;
 mod ui;
 
 #[cfg(windows)]
-mod memory_reader;
-#[cfg(windows)]
 mod discord_rpc;
 #[cfg(windows)]
+mod memory_reader;
+#[cfg(windows)]
 mod rich_presence_monitor;
-
 
 use log::LevelFilter;
 use std::env;

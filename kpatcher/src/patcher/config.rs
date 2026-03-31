@@ -115,23 +115,31 @@ pub struct PatchingConfiguration {
 
 #[derive(Deserialize, Clone)]
 pub struct DiscordConfiguration {
-    pub client_id: String,                               // Discord Application ID
+    pub client_id: String, // Discord Application ID
     #[serde(default = "default_large_image")]
-    pub large_image: String,                             // Large image asset key
+    pub large_image: String, // Large image asset key
     #[serde(default = "default_large_text")]
-    pub large_text: String,                              // Tooltip for large image
+    pub large_text: String, // Tooltip for large image
     #[serde(default = "default_small_image")]
-    pub small_image: String,                             // Small image asset key
+    pub small_image: String, // Small image asset key
     #[serde(default = "default_small_text")]
-    pub small_text: String,                              // Tooltip for small image
+    pub small_text: String, // Tooltip for small image
     #[serde(default)]
-    pub custom_maps: HashMap<String, String>,             // User-defined custom map translations
+    pub custom_maps: HashMap<String, String>, // User-defined custom map translations
 }
 
-fn default_large_image() -> String { "logo".to_string() }
-fn default_large_text() -> String { "Ragnarok Online".to_string() }
-fn default_small_image() -> String { "classe_icon".to_string() }
-fn default_small_text() -> String { "Jogando".to_string() }
+fn default_large_image() -> String {
+    "logo".to_string()
+}
+fn default_large_text() -> String {
+    "Ragnarok Online".to_string()
+}
+fn default_small_image() -> String {
+    "classe_icon".to_string()
+}
+fn default_small_text() -> String {
+    "Jogando".to_string()
+}
 
 pub fn retrieve_patcher_configuration(
     config_file_path: Option<PathBuf>,

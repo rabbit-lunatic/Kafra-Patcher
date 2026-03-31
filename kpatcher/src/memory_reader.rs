@@ -74,9 +74,7 @@ pub fn find_game_process(exe_name: &str) -> Option<u32> {
     sys.refresh_processes();
 
     for (pid, process) in sys.processes() {
-        let proc_name = process
-            .name()
-            .to_lowercase();
+        let proc_name = process.name().to_lowercase();
         if proc_name == target {
             return Some(pid.as_u32());
         }
@@ -133,9 +131,8 @@ pub fn get_module_base(proc_handle: &ProcessHandle, module_name: &str) -> Option
     for i in 0..count {
         let module = modules[i];
         let mut name_buf = [0u16; MAX_PATH];
-        let len = unsafe {
-            GetModuleBaseNameW(handle, module, name_buf.as_mut_ptr(), MAX_PATH as DWORD)
-        };
+        let len =
+            unsafe { GetModuleBaseNameW(handle, module, name_buf.as_mut_ptr(), MAX_PATH as DWORD) };
         if len == 0 {
             continue;
         }
@@ -187,9 +184,7 @@ fn read_string(handle: HANDLE, address: usize, max_len: usize) -> Option<String>
     }
     // Truncate at first null byte
     let end = buffer.iter().position(|&b| b == 0).unwrap_or(bytes_read);
-    String::from_utf8_lossy(&buffer[..end])
-        .to_string()
-        .into()
+    String::from_utf8_lossy(&buffer[..end]).to_string().into()
 }
 
 /// Read all game data from the target process in one call.
@@ -202,8 +197,8 @@ pub fn read_game_data(proc_handle: &ProcessHandle, base_address: usize) -> Optio
     let job_level = read_i32(handle, base_address + OFFSET_JOB_LV)?;
     let player_name = read_string(handle, base_address + OFFSET_NAME, 24)?;
     let map_name = read_string(handle, base_address + OFFSET_CITY_NAME, 64)?;
-    let login_check = read_string(handle, base_address + OFFSET_LOGIN_CHECK, 32)
-        .unwrap_or_default();
+    let login_check =
+        read_string(handle, base_address + OFFSET_LOGIN_CHECK, 32).unwrap_or_default();
 
     let is_in_login = login_check.to_lowercase().contains("login.r") || map_name.is_empty();
 
