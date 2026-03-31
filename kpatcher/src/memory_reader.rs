@@ -128,8 +128,7 @@ pub fn get_module_base(proc_handle: &ProcessHandle, module_name: &str) -> Option
     }
 
     let count = cb_needed as usize / mem::size_of::<HMODULE>();
-    for i in 0..count {
-        let module = modules[i];
+    for &module in modules.iter().take(count) {
         let mut name_buf = [0u16; MAX_PATH];
         let len =
             unsafe { GetModuleBaseNameW(handle, module, name_buf.as_mut_ptr(), MAX_PATH as DWORD) };
