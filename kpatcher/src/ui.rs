@@ -158,6 +158,14 @@ pub fn build_webview(
             "play" => {
                 let args = ipc_config.play.arguments.clone();
                 start_game_client(&ipc_config, &args);
+                // Spawn Discord Rich Presence monitor (idempotent, only if configured)
+                #[cfg(windows)]
+                if let Some(discord_cfg) = ipc_config.discord.clone() {
+                    crate::rich_presence_monitor::spawn_rich_presence_thread(
+                        ipc_config.play.path.clone(),
+                        discord_cfg,
+                    );
+                }
                 if ipc_config.play.exit_on_success.unwrap_or(true) {
                     let _ = ipc_proxy.send_event(UiEvent::Exit);
                 } else if ipc_config.play.minimize_on_start.unwrap_or(false) {

@@ -47,7 +47,16 @@ winapi = { version = "0.3.6", features = [
     "wingdi",
     "dwmapi",
     "libloaderapi",
+    "processthreadsapi",
+    "memoryapi",
+    "psapi",
+    "handleapi",
+    "tlhelp32",
+    "minwindef",
+    "winnt",
 ] }
+discord-rich-presence = "1.1"
+sysinfo = "0.30"
 
 [target.'cfg(windows)'.build-dependencies]
 winres = "0.1"

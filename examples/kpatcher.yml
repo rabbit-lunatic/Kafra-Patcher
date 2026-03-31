@@ -60,3 +60,20 @@ patching:
   in_place: true # Aplica patches diretamente no GRF (mais rápido, usa menos espaço)
   check_integrity: true # Verifica integridade dos patches baixados
   create_grf: true # Cria GRFs que não existem
+
+# (Opcional) Configuração do Discord Rich Presence
+# Remove esta seção inteira para desativar o Rich Presence
+discord:
+  client_id: "123456789012345678" # ID da aplicação Discord (obrigatório)
+  large_image: logo # Nome do asset grande (configurado no Discord Developer Portal)
+  large_text: "LumenRO - Venha jogar!" # Texto ao passar o mouse no ícone grande
+  small_image: classe_icon # Nome do asset pequeno
+  small_text: Transclasse # Texto ao passar o mouse no ícone pequeno
+  # Mapas customizados (sobrescrevem os mapas built-in ou adicionam novos)
+  # Formato: nome_do_mapa_em_minusculo: "Nome Legível"
+  custom_maps:
+    custom_town01: "Cidade Custom"
+    custom_dun01: "Dungeon Custom 1"
+    custom_dun02: "Dungeon Custom 2"
+    # guild_vs01: "Arena GvG" # Exemplo de override de mapa existente
+
