@@ -10,9 +10,15 @@ where
     S: AsRef<str>,
 {
     // Fold parameter list into a String
-    let exe_parameter = exe_arguments
+    let args: Vec<String> = exe_arguments
         .into_iter()
-        .fold(String::new(), |a: String, b| a + " " + b.as_ref() + "");
+        .map(|s| s.as_ref().to_owned())
+        .collect();
+    let exe_parameter = if args.is_empty() {
+        String::new()
+    } else {
+        format!(" {}", args.join(" "))
+    };
     windows::win32_spawn_process_runas(exe_path, &exe_parameter)
 }
 
