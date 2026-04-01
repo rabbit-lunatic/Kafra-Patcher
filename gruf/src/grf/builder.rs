@@ -67,13 +67,20 @@ impl<W: Write + Seek> GrfArchiveBuilder<W> {
         archive: &mut GrfArchive,
         relative_path: String,
     ) -> Result<()> {
-        let compatible = (self.version_major >= 2 && archive.version_major() >= 2)
-            || (self.version_major < 2 && archive.version_major() < 2);
-
         let entry = archive
             .get_file_entry(&relative_path)
             .ok_or(GrufError::EntryNotFound)?
             .clone();
+        self.import_entry_from_grf(archive, entry)
+    }
+
+    pub fn import_entry_from_grf(
+        &mut self,
+        archive: &mut GrfArchive,
+        entry: crate::grf::reader::GrfFileEntry,
+    ) -> Result<()> {
+        let compatible = (self.version_major >= 2 && archive.version_major() >= 2)
+            || (self.version_major < 2 && archive.version_major() < 2);
 
         // If compatibility is fine, verify encryption
         // If entry is encrypted, FORCE incompatibility -> we must decrypt (read_file_content) and re-compress (add_file)
@@ -85,10 +92,11 @@ impl<W: Write + Seek> GrfArchiveBuilder<W> {
         );
 
         if !compatible || is_encrypted {
-            let content = archive.read_file_content(&relative_path)?;
-            return self.add_file(relative_path, content.as_slice());
+            let content = archive.read_file_content_by_entry(&entry)?;
+            return self.add_file(entry.relative_path, content.as_slice());
         }
-        let content = archive.get_entry_raw_data(&relative_path)?;
+        let content = archive.get_entry_raw_data_by_entry(&entry)?;
+        let relative_path = entry.relative_path.clone();
         let offset = {
             if let Some(grf_entry) = self.entries.get(&relative_path) {
                 self.chunks.realloc_chunk(
