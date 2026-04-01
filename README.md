@@ -39,6 +39,7 @@
 | **SSO Login**           | Funciona como launcher com autenticação        |
 | **Patches Manuais**     | Permite aplicar patches locais                 |
 | **Múltiplos Mirrors**   | Redundância de servidores                      |
+| **Discord RPC**        | Rich Presence com tradução de mapas            |
 | **Janela Customizada**  | Sem bordas, transparente, arredondada          |
 
 ---
@@ -62,23 +63,22 @@
 
 ## 🔒 Protegendo sua Configuração (Embed Config)
 
-Por segurança, você pode **embutir** o arquivo `kpatcher.yml` dentro do executável `KPatcher.exe`.
+Por segurança, você pode **embutir** o arquivo `kpatcher.yml` dentro do executável `KPatcher.exe`. O conteúdo é **comprimido e criptografado (AES-256)**, ocultando suas URLs e dificultando a extração de dados sensíveis.
 
-O conteúdo é **comprimido e criptografado (AES-256)**, o que:
+O utilitário `mkpatch.exe` possui uma **interface moderna e nativa** para facilitar este processo:
 
-1. Oculta as URLs do seu servidor.
-2. Evita que usuários editem a configuração.
-3. Dificulta a engenharia reversa e extração de dados sensíveis.
+1. Execute o `mkpatch.exe`.
+2. **Selecionar EXE**: Escolha o arquivo `KPatcher.exe` original.
+3. **Selecionar YML**: Escolha o seu arquivo `kpatcher.yml` final.
+4. Clique em **🔒 Embutir Config no EXE**.
 
-O utilitário `mkpatch.exe` possui uma interface gráfica para isso:
+### Destaques da Ferramenta:
+- **Interface Moderna**: Desenvolvida em Rust com `egui` para alta performance e design limpo.
+- **Feedback Visual**: Ícones de status (✅/⭕) indicam se os arquivos selecionados são válidos.
+- **Terminal de Logs**: Acompanhe o processo de criptografia e compressão em tempo real.
+- **Temas**: Suporte a modo claro (🌞) e escuro (🌙).
 
-1. Abra o `mkpatch.exe` (sem argumentos)
-2. Vá na aba **Embed Config**
-3. Selecione o seu `KPatcher.exe` original
-4. Selecione o seu `kpatcher.yml` configurado
-5. Clique em **Embutir Config no EXE**
-
-Um novo arquivo será gerado (ex: `KPatcher_embedded.exe`). Você pode distribuir este arquivo **sem** o `kpatcher.yml` junto.
+Um novo arquivo será gerado com o sufixo `_embedded.exe`. Você pode distribuí-lo **sem** o arquivo `.yml`.
 
 ---
 
@@ -99,6 +99,7 @@ window:
   # ─── Janela Customizada (Opcional) ───
   frameless: true # Remove bordas e barra de título
   border_radius: 20 # Cantos arredondados (em pixels)
+  #dllwebview: wbkafra.dll # (Opcional) Caminho para DLL customizada do WebView2
 
   # ─── Transparência da Janela (Opcional) ───
   # body {
@@ -157,7 +158,35 @@ patching:
   in_place: true # Patchear GRF diretamente
   check_integrity: true # Verificar integridade dos downloads
   create_grf: true # Criar GRF se não existir
+  concurrent_downloads: 8 # (Opcional) Máximo de downloads simultâneos (Padrão: 8)
+
+# ═══════════════════════════════════════════════════════════════
+# CONFIGURAÇÃO DO DISCORD RICH PRESENCE (OPCIONAL)
+# ═══════════════════════════════════════════════════════════════
+discord:
+  client_id: "123456789012345678" # ID da aplicação no Discord Developer Portal
+  large_image: logo # (Opcional) Nome da imagem grande. Padrão: "logo"
+  large_text: "LumenRO - Venha jogar!" # (Opcional) Texto da imagem grande. Padrão: "Ragnarok Online"
+  small_image: classe_icon # (Opcional) Nome da imagem pequena. Padrão: "classe_icon"
+  small_text: Transclasse # (Opcional) Texto da imagem pequena. Padrão: "Jogando"
+
+  # ─── Mapas Customizados (Tradução) ───
+  # Permite renomear mapas para que apareçam de forma legível no Discord
+  custom_maps:
+    prontera: "Cidade de Prontera"
+    izlude: "Academia de Izlude"
+    custom_map01: "Área de Eventos"
 ```
+
+---
+
+## 💾 Persistência e Manutenção
+
+### Persistência de Janela
+O patcher salva automaticamente sua última posição no arquivo `kpatcher_state.json`. Na próxima execução, ele tentará abrir na mesma posição, a menos que as coordenadas sejam inválidas (fora da tela ou minimizado).
+
+### Limpeza de Executáveis Antigos
+Ao iniciar, o `KPatcher.exe` verifica se existe um arquivo `KPatcher.exe.old` na pasta (comum após atualizações automáticas do binário) e o remove silenciosamente para manter a pasta limpa.
 
 ---
 
@@ -180,6 +209,7 @@ Use `external.invoke('comando')` no seu JavaScript/HTML para interagir com o pat
 | `cancel_update` | Cancela atualização      | `onclick="external.invoke('cancel_update')"`  |
 | `manual_patch`  | Aplica patch manual      | `onclick="external.invoke('manual_patch')"`   |
 | `reset_cache`   | Limpa cache              | `onclick="external.invoke('reset_cache')"`    |
+| `open_url`      | Abre URL no navegador    | `onclick="external.invoke(JSON.stringify({ function: 'open_url', parameters: { url: '...' } }))"` |
 
 ### Exemplo: Botões Básicos
 
