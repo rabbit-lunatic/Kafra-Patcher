@@ -1,260 +1,147 @@
-use serde::Deserialize;
-use std::path::{Path, PathBuf};
-use tao::{
-    dpi::LogicalSize,
-    event::{Event, WindowEvent},
-    event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
-};
-use tinyfiledialogs as tfd;
-use wry::webview::{WebView, WebViewBuilder};
+use std::path::PathBuf;
+use eframe::egui;
+use rfd::FileDialog;
 
 use crate::embed::embed_config_in_exe;
-use crate::generator::generate_patch_from_definition;
-use crate::patch_definition::{PatchDefinition, PatchEntry};
 
-enum UiEvent {
-    SelectFiles,
-    SelectExe,
-    SelectYml,
-    Generate(String),
-    Embed(String),
+pub struct MkPatchApp {
+    exe_path: Option<PathBuf>,
+    yml_path: Option<PathBuf>,
+    log: String,
+}
+
+impl Default for MkPatchApp {
+    fn default() -> Self {
+        Self {
+            exe_path: None,
+            yml_path: None,
+            log: "Pronto.".to_string(),
+        }
+    }
 }
 
 pub fn run_ui() {
-    let event_loop = EventLoop::<UiEvent>::with_user_event();
-    let proxy = event_loop.create_proxy();
-
-    let window = WindowBuilder::new()
-        .with_title("MKPatch Tools")
-        .with_inner_size(LogicalSize::new(600.0, 700.0))
-        .with_resizable(true)
-        .build(&event_loop)
-        .unwrap();
-
-    let html_content = include_str!("assets/index.html");
-
-    let handler_proxy = proxy.clone();
-    let handler = move |_: &tao::window::Window, req: String| {
-        if req == "select_files" {
-            let _ = handler_proxy.send_event(UiEvent::SelectFiles);
-        } else if req == "select_exe" {
-            let _ = handler_proxy.send_event(UiEvent::SelectExe);
-        } else if req == "select_yml" {
-            let _ = handler_proxy.send_event(UiEvent::SelectYml);
-        } else if let Some(stripped) = req.strip_prefix("generate:") {
-            let json_str = stripped.to_string();
-            let _ = handler_proxy.send_event(UiEvent::Generate(json_str));
-        } else if let Some(stripped) = req.strip_prefix("embed:") {
-            let json_str = stripped.to_string();
-            let _ = handler_proxy.send_event(UiEvent::Embed(json_str));
-        }
+    let options = eframe::NativeOptions {
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([550.0, 400.0])
+            .with_min_inner_size([400.0, 300.0]),
+        ..Default::default()
     };
 
-    let webview = WebViewBuilder::new(window)
-        .unwrap()
-        .with_html(html_content)
-        .unwrap()
-        .with_initialization_script(
-            "window.external = { invoke: function(s) { window.ipc.postMessage(s); } };",
-        )
-        .with_ipc_handler(handler)
-        .build()
-        .unwrap();
-
-    event_loop.run(move |event, _, control_flow| {
-        *control_flow = ControlFlow::Wait;
-
-        match event {
-            Event::UserEvent(ui_event) => match ui_event {
-                UiEvent::SelectFiles => {
-                    handle_select_files(&webview);
-                }
-                UiEvent::SelectExe => {
-                    handle_select_exe(&webview);
-                }
-                UiEvent::SelectYml => {
-                    handle_select_yml(&webview);
-                }
-                UiEvent::Generate(json_str) => {
-                    handle_generate(&webview, &json_str);
-                }
-                UiEvent::Embed(json_str) => {
-                    handle_embed(&webview, &json_str);
-                }
-            },
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                ..
-            } => {
-                *control_flow = ControlFlow::Exit;
-            }
-            _ => (),
-        }
-    });
-}
-
-fn handle_select_files(webview: &WebView) {
-    let files = tfd::open_file_dialog_multi("Select Files to Patch", "", None);
-
-    if let Some(files) = files {
-        let files_json = serde_json::to_string(&files).unwrap_or("[]".to_string());
-        let js = format!("filesSelected({})", files_json);
-        let _ = webview.evaluate_script(&js);
-    }
-}
-
-fn handle_select_exe(webview: &WebView) {
-    let file = tfd::open_file_dialog(
-        "Selecionar Executável do Patcher",
-        "",
-        Some((&["*.exe"], "Executáveis (*.exe)")),
+    let _ = eframe::run_native(
+        "MKPatch Tools",
+        options,
+        Box::new(|_cc| Ok(Box::<MkPatchApp>::default())),
     );
-
-    if let Some(path) = file {
-        let path_escaped = path.replace('\\', "\\\\").replace('"', "\\\"");
-        let js = format!("exeSelected(\"{}\")", path_escaped);
-        let _ = webview.evaluate_script(&js);
-    }
 }
 
-fn handle_select_yml(webview: &WebView) {
-    let file = tfd::open_file_dialog(
-        "Selecionar Arquivo de Configuração",
-        "",
-        Some((&["*.yml", "*.yaml"], "Arquivos YAML (*.yml, *.yaml)")),
-    );
+impl eframe::App for MkPatchApp {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.horizontal(|ui| {
+                ui.heading("🔧 MKPatch Tools");
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    let is_dark = ctx.style().visuals.dark_mode;
+                    let text = if is_dark { "🌞 Claro" } else { "🌙 Escuro" };
+                    if ui.button(text).clicked() {
+                        if is_dark {
+                            ctx.set_visuals(egui::Visuals::light());
+                        } else {
+                            ctx.set_visuals(egui::Visuals::dark());
+                        }
+                    }
+                });
+            });
+            ui.separator();
 
-    if let Some(path) = file {
-        let path_escaped = path.replace('\\', "\\\\").replace('"', "\\\"");
-        let js = format!("ymlSelected(\"{}\")", path_escaped);
-        let _ = webview.evaluate_script(&js);
-    }
-}
+            ui.add_space(10.0);
+            ui.label("Embute o arquivo de configuração YML dentro do executável do patcher para ocultar URLs sensíveis.");
+            ui.add_space(20.0);
 
-#[derive(Deserialize)]
-struct EmbedInput {
-    exe_path: String,
-    yml_path: String,
-}
+            ui.label("Executável do Patcher (.exe):");
+            ui.horizontal(|ui| {
+                if ui.button("Selecionar EXE...").clicked() {
+                    if let Some(path) = FileDialog::new()
+                        .add_filter("Executáveis", &["exe"])
+                        .pick_file()
+                    {
+                        self.exe_path = Some(path);
+                        self.log.push_str("\n[Info] EXE Selecionado.");
+                    }
+                }
+                if let Some(path) = &self.exe_path {
+                    ui.label(path.file_name().unwrap_or_default().to_string_lossy());
+                } else {
+                    ui.label("Nenhum arquivo...");
+                }
+            });
 
-fn handle_embed(webview: &WebView, json_str: &str) {
-    let input: EmbedInput = match serde_json::from_str(json_str) {
-        Ok(i) => i,
-        Err(e) => {
-            let _ =
-                webview.evaluate_script(&format!("logMessage('Erro ao processar input: {}')", e));
-            return;
-        }
-    };
+            ui.add_space(15.0);
 
-    let exe_path = PathBuf::from(&input.exe_path);
-    let yml_path = PathBuf::from(&input.yml_path);
+            ui.label("Arquivo de Configuração (.yml):");
+            ui.horizontal(|ui| {
+                if ui.button("Selecionar YML...").clicked() {
+                    if let Some(path) = FileDialog::new()
+                        .add_filter("YAML", &["yml", "yaml"])
+                        .pick_file()
+                    {
+                        self.yml_path = Some(path);
+                        self.log.push_str("\n[Info] YML Selecionado.");
+                    }
+                }
+                if let Some(path) = &self.yml_path {
+                    ui.label(path.file_name().unwrap_or_default().to_string_lossy());
+                } else {
+                    ui.label("Nenhum arquivo...");
+                }
+            });
 
-    // Gerar nome do arquivo de saída
-    let output_filename = exe_path
-        .file_stem()
-        .map(|s| format!("{}_embedded.exe", s.to_string_lossy()))
-        .unwrap_or_else(|| "output_embedded.exe".to_string());
+            ui.add_space(25.0);
 
-    let output_path = exe_path
-        .parent()
-        .map(|p| p.join(&output_filename))
-        .unwrap_or_else(|| PathBuf::from(&output_filename));
+            if ui.button("🔒 Embutir Config no EXE").clicked() {
+                if let (Some(exe), Some(yml)) = (&self.exe_path, &self.yml_path) {
+                    let output_filename = exe
+                        .file_stem()
+                        .map(|s| format!("{}_embedded.exe", s.to_string_lossy()))
+                        .unwrap_or_else(|| "output_embedded.exe".to_string());
 
-    let _ = webview.evaluate_script("logMessage('Processando...')");
+                    let output_path = exe
+                        .parent()
+                        .map(|p| p.join(&output_filename))
+                        .unwrap_or_else(|| PathBuf::from(&output_filename));
 
-    match embed_config_in_exe(&exe_path, &yml_path, &output_path) {
-        Ok(_) => {
-            let output_display = output_path.display().to_string().replace('\\', "\\\\");
-            let _ = webview.evaluate_script(&format!(
-                "logMessage('✅ Sucesso! Arquivo gerado: {}')",
-                output_display
-            ));
-            let _ = webview.evaluate_script(&format!(
-                "alert('Config embutido com sucesso!\\n\\nArquivo gerado:\\n{}')",
-                output_path
-                    .file_name()
-                    .unwrap_or_default()
-                    .to_string_lossy()
-            ));
-        }
-        Err(e) => {
-            let error_msg = format!("{:#}", e).replace('"', "'");
-            let _ = webview.evaluate_script(&format!("logMessage('❌ Erro: {}')", error_msg));
-            let _ = webview
-                .evaluate_script(&format!("alert('Erro ao embutir config:\\n{}')", error_msg));
-        }
-    }
-}
+                    self.log.push_str("\n[Info] Processando...");
 
-#[derive(Deserialize)]
-struct UIInput {
-    target_grf: String,
-    output_filename: String,
-    merge_grf: bool,
-    files: Vec<String>,
-}
-
-fn handle_generate(webview: &WebView, json_str: &str) {
-    let input: UIInput = match serde_json::from_str(json_str) {
-        Ok(i) => i,
-        Err(e) => {
-            let _ = webview.evaluate_script(&format!("logMessage('Error parsing input: {}')", e));
-            return;
-        }
-    };
-
-    if input.files.is_empty() {
-        let _ = webview.evaluate_script("logMessage('No files selected!')");
-        return;
-    }
-
-    let entries_mapped: Vec<PatchEntry> = input
-        .files
-        .iter()
-        .map(|f| {
-            let path = Path::new(f);
-            let filename = path.file_name().unwrap().to_string_lossy().to_string();
-            PatchEntry {
-                relative_path: f.clone(),
-                is_removed: false,
-                in_grf_path: Some(filename),
+                    match embed_config_in_exe(exe, yml, &output_path) {
+                        Ok(_) => {
+                            self.log.push_str("\n[Sucesso] Config embutido com sucesso!");
+                            self.log.push_str(&format!("\nSalvo em: {}", output_path.display()));
+                        }
+                        Err(e) => {
+                            self.log.push_str(&format!("\n[Erro] {}", e));
+                        }
+                    }
+                } else {
+                    self.log.push_str("\n[Erro] Selecione o EXE e o YML primeiro.");
+                }
             }
-        })
-        .collect();
 
-    let def_for_gen = PatchDefinition {
-        include_checksums: true,
-        use_grf_merging: input.merge_grf,
-        target_grf_name: if input.target_grf.is_empty() {
-            None
-        } else {
-            Some(input.target_grf)
-        },
-        entries: entries_mapped,
-    };
+            ui.add_space(20.0);
+            ui.separator();
+            ui.label("Logs:");
+            ui.add_space(5.0);
 
-    let output_path = PathBuf::from(&input.output_filename);
-    let output_path = if output_path.extension().is_none() {
-        output_path.with_extension("thor")
-    } else {
-        output_path
-    };
-
-    let _ = webview.evaluate_script("logMessage('Generating patch...')");
-
-    match generate_patch_from_definition(def_for_gen, ".", &output_path) {
-        Ok(_) => {
-            let output_display = output_path.display().to_string().replace("\\", "\\\\");
-            let _ = webview.evaluate_script(&format!(
-                "logMessage('Success! Patch saved to: {}')",
-                output_display
-            ));
-            let _ = webview.evaluate_script("alert('Patch Generated Successfully!')");
-        }
-        Err(e) => {
-            let _ = webview.evaluate_script(&format!("logMessage('Error: {}')", e));
-        }
+            let mut log_text = self.log.as_str();
+            egui::ScrollArea::vertical()
+                .stick_to_bottom(true)
+                .show(ui, |ui| {
+                    ui.add_sized(
+                        ui.available_size(),
+                        egui::TextEdit::multiline(&mut log_text)
+                            .interactive(false)
+                            .font(egui::TextStyle::Monospace),
+                    );
+                });
+        });
     }
 }

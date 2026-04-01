@@ -6,21 +6,12 @@ edition = "2021"
 build = "build.rs"
 description = "Gerador de patches para o Kafra Patcher"
 
-
 [dependencies]
-gruf = { version = "0.2", path = "../gruf" }
-
 log = "0.4"
 simple_logger = "1.11"
-serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.8"
-serde_json = "1.0"
 anyhow = "1.0"
-structopt = "0.3"
-walkdir = "2.3"
-wry = "0.24"
-tao = "0.16"
-tinyfiledialogs = { version = "3.3", default-features = false }
+eframe = "0.27"
+rfd = "0.14"
 flate2 = "1.0"
 aes-gcm = "0.10"
 rand = "0.8"
