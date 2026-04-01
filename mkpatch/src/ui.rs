@@ -1,6 +1,6 @@
-use std::path::PathBuf;
 use eframe::egui;
 use rfd::FileDialog;
+use std::path::PathBuf;
 
 use crate::embed::embed_config_in_exe;
 
@@ -41,9 +41,9 @@ pub fn run_ui() {
             visuals.widgets.hovered.rounding = egui::Rounding::same(8.0);
             visuals.widgets.active.rounding = egui::Rounding::same(8.0);
             visuals.selection.bg_fill = egui::Color32::from_rgb(60, 120, 210);
-            
+
             cc.egui_ctx.set_visuals(visuals);
-            
+
             Box::<MkPatchApp>::default()
         }),
     );
@@ -64,7 +64,7 @@ fn ui_file_picker(
         ui.horizontal(|ui| {
             let btn_text = format!("{} Selecionar...", icon);
             let button = egui::Button::new(btn_text).min_size(egui::vec2(120.0, 32.0));
-            
+
             if ui.add(button).clicked() {
                 if let Some(p) = FileDialog::new()
                     .add_filter(filter_name, filter_ext)
@@ -79,9 +79,11 @@ fn ui_file_picker(
 
             if let Some(p) = path {
                 ui.label(egui::RichText::new("✅").color(egui::Color32::GREEN));
-                ui.label(egui::RichText::new(p.file_name().unwrap_or_default().to_string_lossy())
-                    .italics()
-                    .color(ui.visuals().strong_text_color()));
+                ui.label(
+                    egui::RichText::new(p.file_name().unwrap_or_default().to_string_lossy())
+                        .italics()
+                        .color(ui.visuals().strong_text_color()),
+                );
             } else {
                 ui.label(egui::RichText::new("⭕").color(egui::Color32::from_rgb(200, 100, 100)));
                 ui.label(egui::RichText::new("Nenhum arquivo...").weak());
@@ -125,7 +127,7 @@ impl eframe::App for MkPatchApp {
                 .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
                 .show(ui, |ui| {
                     ui.set_width(ui.available_width());
-                    
+
                     ui_file_picker(
                         ui,
                         "Executável do Patcher (.exe):",
@@ -135,7 +137,7 @@ impl eframe::App for MkPatchApp {
                         "📁",
                         &mut self.log,
                     );
-                    
+
                     ui.add_space(20.0);
 
                     ui_file_picker(
@@ -154,7 +156,7 @@ impl eframe::App for MkPatchApp {
             // Action Section
             ui.vertical_centered(|ui| {
                 let ready = self.exe_path.is_some() && self.yml_path.is_some();
-                
+
                 let btn_text = egui::RichText::new("🔒 Embutir Config no EXE")
                     .size(18.0)
                     .strong()
@@ -166,7 +168,7 @@ impl eframe::App for MkPatchApp {
                     .fill(if ready { egui::Color32::from_rgb(60, 120, 210) } else { ui.visuals().widgets.inactive.bg_fill });
 
                 let mut response = ui.add_enabled(ready, btn);
-                
+
                 if !ready {
                     response = response.on_hover_text("Selecione ambos os arquivos para continuar.");
                 }
@@ -203,7 +205,7 @@ impl eframe::App for MkPatchApp {
             // Log Section (Terminal Style)
             ui.label(egui::RichText::new("LOG DE ATIVIDADES").small().strong().color(ui.visuals().weak_text_color()));
             ui.add_space(4.0);
-            
+
             egui::Frame::canvas(ui.style())
                 .fill(egui::Color32::from_black_alpha(100))
                 .rounding(6.0)
@@ -224,7 +226,7 @@ impl eframe::App for MkPatchApp {
                             );
                         });
                 });
-            
+
             ui.add_space(10.0);
         });
     }

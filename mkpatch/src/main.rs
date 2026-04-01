@@ -3,10 +3,10 @@
 pub mod embed;
 mod ui;
 
-use std::env;
 use anyhow::Result;
 use log::LevelFilter;
 use simple_logger::SimpleLogger;
+use std::env;
 
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 
