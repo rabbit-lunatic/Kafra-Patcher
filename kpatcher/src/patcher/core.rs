@@ -771,12 +771,16 @@ fn verify_grf_integrity(grf_path: impl AsRef<Path>) -> Result<()> {
     let file_count = grf_archive.file_count();
     log::trace!("Verificando integridade de {} arquivos no GRF", file_count);
 
-    // Verificar se podemos ler as entradas do arquivo
-    let entries: Vec<_> = grf_archive.get_entries().cloned().collect();
-
     // Verificar amostra de arquivos para não demorar muito em GRFs grandes
-    let sample_size = std::cmp::min(10, entries.len());
-    for entry in entries.iter().take(sample_size) {
+    let sample_size = 10;
+    // Verificar se podemos ler as entradas do arquivo (apenas uma amostra)
+    let entries: Vec<_> = grf_archive
+        .get_entries()
+        .take(sample_size)
+        .cloned()
+        .collect();
+
+    for entry in entries {
         // Tentar ler o conteúdo do arquivo
         if entry.size > 0 {
             grf_archive
