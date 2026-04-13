@@ -599,51 +599,71 @@ async fn apply_patches(
     })?;
     let patch_count = pending_patch_queue.len();
     ui_controller.dispatch_patching_status(PatchingStatus::InstallationInProgress(0, patch_count));
+
+    let mut last_applied_index = None;
+    let mut patching_result = Ok(());
+
     for (patch_number, pending_patch) in pending_patch_queue.into_iter().enumerate() {
         // Cancel the patching process if we've been asked to or if the other
         // end of the channel has been disconnected
-        process_incoming_commands(patching_thread_rx)?;
+        if let Err(e) = process_incoming_commands(patching_thread_rx) {
+            patching_result = Err(e);
+            break;
+        }
 
         let patch_name = pending_patch.info.file_name;
-        let patch_name_clone = patch_name.clone();
+        let patch_index = pending_patch.info.index;
         log::info!("Processing {}", patch_name);
 
         let local_file_path = pending_patch.local_file_path;
         let config_clone = config.clone();
         let cwd_clone = current_working_dir.clone();
 
-        let apply_result = tokio::task::spawn_blocking(move || {
-            apply_patch(local_file_path, &config_clone, &cwd_clone)
-        })
-        .await
-        .map_err(|e| {
-            InterruptibleFnError::Err(format!(
-                "Task join error for '{}': {}.",
-                patch_name_clone, e
-            ))
-        })?;
+        let join_result =
+            tokio::task::spawn_blocking(move || apply_patch(local_file_path, &config_clone, &cwd_clone))
+        .await;
 
-        apply_result.map_err(|e| {
-            InterruptibleFnError::Err(format!("Failed to apply patch '{}': {}.", patch_name, e))
-        })?;
-        // Update the cache file with the last successful patch's index
+        match join_result {
+            Ok(Ok(())) => {
+                last_applied_index = Some(patch_index);
+                // Update status
+                ui_controller.dispatch_patching_status(PatchingStatus::InstallationInProgress(
+                    1 + patch_number,
+                    patch_count,
+                ));
+            }
+            Ok(Err(e)) => {
+                patching_result = Err(InterruptibleFnError::Err(format!(
+                    "Failed to apply patch '{}': {}.",
+                    patch_name, e
+                )));
+                break;
+            }
+            Err(e) => {
+                patching_result = Err(InterruptibleFnError::Err(format!(
+                    "Task join error for '{}': {}.",
+                    patch_name, e
+                )));
+                break;
+            }
+        }
+    }
+
+    // Always update the cache file with the last successful patch's index if any patch was applied
+    if let Some(index) = last_applied_index {
         if let Err(e) = write_cache_file(
             &cache_file_path,
             PatcherCache {
-                last_patch_index: pending_patch.info.index,
+                last_patch_index: index,
             },
         )
         .await
         {
             log::warn!("Failed to write cache file: {}.", e);
         }
-        // Update status
-        ui_controller.dispatch_patching_status(PatchingStatus::InstallationInProgress(
-            1 + patch_number,
-            patch_count,
-        ));
     }
-    Ok(())
+
+    patching_result
 }
 
 fn apply_patch(
