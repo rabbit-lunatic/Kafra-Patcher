@@ -619,8 +619,9 @@ async fn apply_patches(
         let config_clone = config.clone();
         let cwd_clone = current_working_dir.clone();
 
-        let join_result =
-            tokio::task::spawn_blocking(move || apply_patch(local_file_path, &config_clone, &cwd_clone))
+        let join_result = tokio::task::spawn_blocking(move || {
+            apply_patch(local_file_path, &config_clone, &cwd_clone)
+        })
         .await;
 
         match join_result {
