@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kafra Patcher - Patcher Moderno para Ragnarok Online</title>
+  <meta name="description" content="Patcher customizável e multiplataforma para clientes Ragnarok Online. Interface web moderna com HTML/CSS/JS.">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- Particle Canvas -->
+  <canvas id="particles" class="particles-canvas"></canvas>
+
+  <!-- Navigation -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="#" class="nav-brand">
+        <div class="brand-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M6 11h4M8 9v4M12 11h4M14 9v4M18 11h2M2 11h2M12 3v2M12 19v2"/>
+          </svg>
+        </div>
+        <span class="brand-text">Kafra Patcher</span>
+      </a>
+      
+      <ul class="nav-menu">
+        <li><a href="#features" class="nav-link">Funcionalidades</a></li>
+        <li><a href="#mkpatch" class="nav-link">mkpatch</a></li>
+        <li><a href="#install" class="nav-link">Instalação</a></li>
+        <li><a href="#config" class="nav-link">Configuração</a></li>
+        <li><a href="#examples" class="nav-link">Exemplos</a></li>
+      </ul>
+
+      <div class="nav-actions">
+        <a href="https://github.com/ArturllVale/Kafra-Patcher" target="_blank" class="nav-icon" aria-label="GitHub">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+        </a>
+        <a href="https://github.com/ArturllVale/Kafra-Patcher/releases" target="_blank" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          Download
+        </a>
+      </div>
+
+      <button class="nav-toggle" id="navToggle" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+        </svg>
+        <span>Patcher Moderno para Ragnarok Online</span>
+        <span class="badge">v2.0</span>
+      </div>
+      
+      <h1 class="hero-title">
+        <span class="gradient-text">Kafra Patcher</span>
+      </h1>
+      
+      <p class="hero-subtitle">
+        Patcher customizável e multiplataforma para clientes Ragnarok Online
+      </p>
+      
+      <p class="hero-description">
+        Interface web moderna com HTML/CSS/JS, configuração YAML simples, suporte a múltiplos formatos de patch e Discord Rich Presence integrado.
+      </p>
+
+      <div class="hero-actions">
+        <a href="https://github.com/ArturllVale/Kafra-Patcher/releases" target="_blank" class="btn btn-glow btn-large">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          Baixar Agora
+        </a>
+        <a href="https://github.com/ArturllVale/Kafra-Patcher" target="_blank" class="btn btn-outline btn-large">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+          </svg>
+          Ver no GitHub
+        </a>
+      </div>
+
+      <div class="hero-stats">
+        <div class="stat-card">
+          <div class="stat-value">4</div>
+          <div class="stat-label">Formatos GRF</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">HTTPS</div>
+          <div class="stat-label">Suporte Seguro</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">YAML</div>
+          <div class="stat-label">Configuração</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">Rust</div>
+          <div class="stat-label">Performance</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="scroll-indicator">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M5 12h14M12 5l7 7-7 7"/>
+      </svg>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="section">
+    <div class="section-bg"></div>
+    <div class="container">
+      <div class="section-header">
+        <span class="section-badge">Recursos</span>
+        <h2 class="section-title gradient-text">Funcionalidades Poderosas</h2>
+        <p class="section-description">Tudo que você precisa para criar uma experiência de atualização perfeita para seus jogadores.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon bg-blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <h3>UI Web Customizável</h3>
+          <p>Interface feita com HTML/CSS/JS - como um site. Total liberdade para criar designs únicos.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon bg-yellow">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+          </div>
+          <h3>Configuração YAML</h3>
+          <p>Arquivo externo simples de configurar. Toda a personalização em um único arquivo.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon bg-green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+          </div>
+          <h3>HTTP/HTTPS</h3>
+          <p>Suporte a conexões seguras para proteger seus dados e dos jogadores.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon bg-purple">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+              <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+              <line x1="12" y1="22.08" x2="12" y2="12"/>
+            </svg>
+          </div>
+          <h3>Patches GRF</h3>
+          <p>Suporte às versões 0x101, 0x102, 0x103 e 0x200 dos arquivos GRF.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon bg-red">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+              <polyline points="2 17 12 22 22 17"/>
+              <polyline points="2 12 12 17 22 12"/>
+            </svg>
+          </div>
+          <h3>Formato THOR</h3>
+          <p>Compatível com Thor Patcher, o padrão da indústria para Ragnarok Online.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon bg-indigo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <h3>SSO Login</h3>
+          <p>Funciona como launcher com autenticação integrada para seus jogadores.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon bg-teal">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="4 17 10 11 4 5"/>
+              <line x1="12" y1="19" x2="20" y2="19"/>
+            </svg>
+          </div>
+          <h3>Patches Manuais</h3>
+          <p>Permite aplicar patches locais para atualizações de emergência.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon bg-amber">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="2" y1="12" x2="22" y2="12"/>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+            </svg>
+          </div>
+          <h3>Múltiplos Mirrors</h3>
+          <p>Redundância de servidores para garantir downloads sempre disponíveis.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon bg-fuchsia">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+          </div>
+          <h3>Discord RPC</h3>
+          <p>Rich Presence com tradução de mapas para mostrar status no Discord.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MkPatch Section -->
+  <section id="mkpatch" class="section section-dark">
+    <div class="section-bg-alt"></div>
+    <div class="container">
+      <div class="section-header">
+        <span class="section-badge badge-red">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+          </svg>
+          Ferramenta de Segurança
+        </span>
+        <h2 class="section-title gradient-text">mkpatch Tool</h2>
+        <p class="section-description">Proteja sua configuração embutindo o arquivo YAML diretamente no executável com criptografia AES-256.</p>
+      </div>
+
+      <div class="mkpatch-grid">
+        <div class="mkpatch-info">
+          <div class="info-card">
+            <h3>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="m9 12 2 2 4-4"/>
+              </svg>
+              Por que usar?
+            </h3>
+            <ul>
+              <li><span class="check">✓</span> Oculte URLs e dados sensíveis do patcher</li>
+              <li><span class="check">✓</span> Conteúdo comprimido e criptografado (AES-256)</li>
+              <li><span class="check">✓</span> Dificulta a extração de informações</li>
+              <li><span class="check">✓</span> Distribua apenas o executável, sem arquivo .yml</li>
+            </ul>
+          </div>
+
+          <div class="steps-grid">
+            <div class="step-item">
+              <div class="step-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+                  <polyline points="14 2 14 8 20 8"/>
+                </svg>
+              </div>
+              <h4>Selecionar EXE</h4>
+              <p>Escolha o arquivo KPatcher.exe original</p>
+            </div>
+            <div class="step-item">
+              <div class="step-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+              </div>
+              <h4>Selecionar YML</h4>
+              <p>Escolha seu arquivo kpatcher.yml final</p>
+            </div>
+            <div class="step-item">
+              <div class="step-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </div>
+              <h4>Embutir Config</h4>
+              <p>Clique para criptografar e embutir</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="mkpatch-preview">
+          <div class="preview-header">
+            <h3>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+                <line x1="8" y1="21" x2="16" y2="21"/>
+                <line x1="12" y1="17" x2="12" y2="21"/>
+              </svg>
+              Interface Moderna
+            </h3>
+            <div class="theme-toggle">
+              <span>☀️</span>
+              <span>🌙</span>
+            </div>
+          </div>
+
+          <div class="preview-content">
+            <div class="file-item">
+              <div class="file-header">
+                <span>Arquivo EXE</span>
+                <span class="status ok">✓</span>
+              </div>
+              <div class="file-body">
+                <div class="file-icon blue">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 11h4M8 9v4M12 11h4M14 9v4M18 11h2M2 11h2M12 3v2M12 19v2"/>
+                  </svg>
+                </div>
+                <div class="file-info">
+                  <div class="file-name">KPatcher.exe</div>
+                  <div class="file-size">2.4 MB</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="file-item">
+              <div class="file-header">
+                <span>Arquivo YML</span>
+                <span class="status ok">✓</span>
+              </div>
+              <div class="file-body">
+                <div class="file-icon yellow">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                  </svg>
+                </div>
+                <div class="file-info">
+                  <div class="file-name">kpatcher.yml</div>
+                  <div class="file-size">1.2 KB</div>
+                </div>
+              </div>
+            </div>
+
+            <button class="btn btn-embed">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Embutir Config no EXE
+            </button>
+
+            <div class="terminal">
+              <div class="terminal-header">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="4 17 10 11 4 5"/>
+                  <line x1="12" y1="19" x2="20" y2="19"/>
+                </svg>
+                <span>Terminal de Logs</span>
+              </div>
+              <div class="terminal-body">
+                <p><span class="success">✓</span> Lendo KPatcher.exe...</p>
+                <p><span class="success">✓</span> Lendo kpatcher.yml...</p>
+                <p><span class="loading">⟳</span> Comprimindo configuração...</p>
+                <p><span class="loading">⟳</span> Criptografando (AES-256)...</p>
+                <p><span class="success">✓</span> Gerado: KPatcher_embedded.exe</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mkpatch-features">
+        <div class="mkpatch-feature">
+          <div class="mkpatch-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+          </div>
+          <h4>Feedback Visual</h4>
+          <p>Ícones de status indicam se os arquivos selecionados são válidos</p>
+        </div>
+        <div class="mkpatch-feature">
+          <div class="mkpatch-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="4 17 10 11 4 5"/>
+              <line x1="12" y1="19" x2="20" y2="19"/>
+            </svg>
+          </div>
+          <h4>Terminal de Logs</h4>
+          <p>Acompanhe o processo de criptografia em tempo real</p>
+        </div>
+        <div class="mkpatch-feature">
+          <div class="mkpatch-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="5"/>
+              <line x1="12" y1="1" x2="12" y2="3"/>
+              <line x1="12" y1="21" x2="12" y2="23"/>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+              <line x1="1" y1="12" x2="3" y2="12"/>
+              <line x1="21" y1="12" x2="23" y2="12"/>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+            </svg>
+          </div>
+          <h4>Temas Claro/Escuro</h4>
+          <p>Suporte a modo claro e escuro para sua preferência</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Installation Section -->
+  <section id="install" class="section">
+    <div class="section-bg-blue"></div>
+    <div class="container">
+      <div class="section-header">
+        <span class="section-badge badge-blue">Instalação</span>
+        <h2 class="section-title gradient-text">Comece em Minutos</h2>
+        <p class="section-description">Quatro passos simples para ter seu patcher funcionando.</p>
+      </div>
+
+      <div class="install-grid">
+        <div class="install-card">
+          <div class="install-number">01</div>
+          <div class="install-content">
+            <h3>Download</h3>
+            <p>Baixe a última release do Kafra Patcher para Windows.</p>
+            <a href="https://github.com/ArturllVale/Kafra-Patcher/releases" target="_blank" class="btn btn-outline-yellow">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/>
+              </svg>
+              Download
+            </a>
+          </div>
+        </div>
+
+        <div class="install-card">
+          <div class="install-number">02</div>
+          <div class="install-content">
+            <h3>Extração</h3>
+            <p>Extraia os arquivos na pasta do seu cliente Ragnarok Online.</p>
+            <div class="code-block">
+              <code>extrair KPatcher.zip -> pasta_do_ro/</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="install-card">
+          <div class="install-number">03</div>
+          <div class="install-content">
+            <h3>Configuração</h3>
+            <p>Crie o arquivo kpatcher.yml com suas configurações.</p>
+            <div class="code-block">
+              <pre><code>window:
+  title: Meu Servidor RO
+  width: 780
+  height: 580
+
+web:
+  index_url: https://meuservidor.com/patcher/</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="install-card">
+          <div class="install-number">04</div>
+          <div class="install-content">
+            <h3>Execução</h3>
+            <p>Execute o KPatcher.exe e comece a jogar!</p>
+            <div class="code-block">
+              <code>./KPatcher.exe</code>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="requirements">
+        <h3>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="4" y="4" width="16" height="16" rx="2" ry="2"/>
+            <rect x="9" y="9" width="6" height="6"/>
+            <line x1="9" y1="1" x2="9" y2="4"/>
+            <line x1="15" y1="1" x2="15" y2="4"/>
+            <line x1="9" y1="20" x2="9" y2="23"/>
+            <line x1="15" y1="20" x2="15" y2="23"/>
+            <line x1="20" y1="9" x2="23" y2="9"/>
+            <line x1="20" y1="14" x2="23" y2="14"/>
+            <line x1="1" y1="9" x2="4" y2="9"/>
+            <line x1="1" y1="14" x2="4" y2="14"/>
+          </svg>
+          Requisitos do Sistema
+        </h3>
+        <div class="requirements-grid">
+          <div class="requirement-item">
+            <span class="check">✓</span>
+            <div>
+              <div class="req-label">Sistema Operacional</div>
+              <div class="req-value">Windows 10/11</div>
+            </div>
+          </div>
+          <div class="requirement-item">
+            <span class="check">✓</span>
+            <div>
+              <div class="req-label">Runtime</div>
+              <div class="req-value">WebView2 (incluído no W11)</div>
+            </div>
+          </div>
+          <div class="requirement-item">
+            <span class="check">✓</span>
+            <div>
+              <div class="req-label">Cliente</div>
+              <div class="req-value">Arquivos do Ragnarok Online</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Configuration Section -->
+  <section id="config" class="section section-dark">
+    <div class="section-bg-purple"></div>
+    <div class="container">
+      <div class="section-header">
+        <span class="section-badge badge-purple">Configuração</span>
+        <h2 class="section-title gradient-text">Simples e Flexível</h2>
+        <p class="section-description">Configure tudo através de um arquivo YAML intuitivo e bem documentado.</p>
+      </div>
+
+      <div class="config-grid">
+        <div class="config-code">
+          <div class="code-window">
+            <div class="code-header">
+              <span class="dot red"></span>
+              <span class="dot yellow"></span>
+              <span class="dot green"></span>
+              <span class="code-title">kpatcher.yml</span>
+            </div>
+            <div class="code-content">
+              <pre><code><span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="comment"># CONFIGURAÇÃO DA JANELA</span>
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="key">window</span>:
+  <span class="key">title</span>: <span class="string">Meu Servidor RO</span>
+  <span class="key">width</span>: <span class="number">780</span>
+  <span class="key">height</span>: <span class="number">580</span>
+  <span class="key">resizable</span>: <span class="boolean">false</span>
+  <span class="key">frameless</span>: <span class="boolean">true</span>
+  <span class="key">border_radius</span>: <span class="number">20</span>
+
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="comment"># BOTÃO JOGAR</span>
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="key">play</span>:
+  <span class="key">path</span>: <span class="string">ragexe.exe</span>
+  <span class="key">arguments</span>: [<span class="string">"1sak1"</span>]
+  <span class="key">exit_on_success</span>: <span class="boolean">true</span>
+
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="comment"># CONFIGURAÇÃO WEB E PATCHES</span>
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="key">web</span>:
+  <span class="key">index_url</span>: <span class="string">https://meuservidor.com/patcher/</span>
+  <span class="key">preferred_patch_server</span>: <span class="string">Principal</span>
+  
+  <span class="key">patch_servers</span>:
+    - <span class="key">name</span>: <span class="string">Principal</span>
+      <span class="key">plist_url</span>: <span class="string">https://meuservidor.com/plist.txt</span>
+      <span class="key">patch_url</span>: <span class="string">https://meuservidor.com/patches/</span>
+
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="comment"># CONFIGURAÇÃO DO DISCORD RPC</span>
+<span class="comment"># ═══════════════════════════════════════════════════════════════</span>
+<span class="key">discord</span>:
+  <span class="key">client_id</span>: <span class="string">"123456789012345678"</span>
+  <span class="key">large_image</span>: <span class="string">logo</span>
+  <span class="key">large_text</span>: <span class="string">"Venha jogar!"</span></code></pre>
+            </div>
+          </div>
+        </div>
+
+        <div class="config-features">
+          <div class="config-item">
+            <div class="config-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 18 22 12 16 6"/>
+                <polyline points="8 6 2 12 8 18"/>
+              </svg>
+            </div>
+            <div>
+              <h4>Sintaxe Clara</h4>
+              <p>YAML bem estruturado com comentários explicativos</p>
+            </div>
+          </div>
+          <div class="config-item">
+            <div class="config-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <div>
+              <h4>Configuração Embutida</h4>
+              <p>Embuta a configuração no executável com criptografia AES-256</p>
+            </div>
+          </div>
+          <div class="config-item">
+            <div class="config-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+              </svg>
+            </div>
+            <div>
+              <h4>UI Customizada</h4>
+              <p>Janela sem bordas, transparente, com cantos arredondados</p>
+            </div>
+          </div>
+          <div class="config-item">
+            <div class="config-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            </div>
+            <div>
+              <h4>Múltiplos Servidores</h4>
+              <p>Configure mirrors para redundância e alta disponibilidade</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Examples Section -->
+  <section id="examples" class="section">
+    <div class="section-bg-green"></div>
+    <div class="container">
+      <div class="section-header">
+        <span class="section-badge badge-green">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="16 18 22 12 16 6"/>
+            <polyline points="8 6 2 12 8 18"/>
+          </svg>
+          Galeria de Exemplos
+        </span>
+        <h2 class="section-title gradient-text">Exemplos Criados</h2>
+        <p class="section-description">Templates prontos para usar e inspirar seu próprio design. Cada exemplo demonstra diferentes funcionalidades e estilos visuais.</p>
+      </div>
+
+      <div class="examples-grid">
+        <div class="example-card">
+          <div class="example-icon bg-purple">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+              <line x1="3" y1="9" x2="21" y2="9"/>
+              <line x1="9" y1="21" x2="9" y2="9"/>
+            </svg>
+          </div>
+          <h3>Bootstrap UI</h3>
+          <p>UI completa e moderna utilizando Bootstrap 5. Inclui barra de progresso animada, sistema de notificações toast, design responsivo e componentes pré-estilizados.</p>
+          <div class="example-features">
+            <span><span class="check">✓</span> Design moderno</span>
+            <span><span class="check">✓</span> Componentes ricos</span>
+            <span><span class="check">✓</span> Fácil customização</span>
+          </div>
+          <div class="example-tags">
+            <span class="tag">Bootstrap 5</span>
+            <span class="tag">Progress Bar</span>
+            <span class="tag">Toast</span>
+            <span class="tag">Responsive</span>
+          </div>
+        </div>
+
+        <div class="example-card">
+          <div class="example-icon bg-green">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <h3>Basic Launcher</h3>
+          <p>Launcher minimalista com sistema de login SSO integrado. Interface limpa focada na autenticação do jogador antes de iniciar o jogo.</p>
+          <div class="example-features">
+            <span><span class="check">✓</span> Autenticação</span>
+            <span><span class="check">✓</span> Interface limpa</span>
+            <span><span class="check">✓</span> Foco em usabilidade</span>
+          </div>
+          <div class="example-tags">
+            <span class="tag">SSO</span>
+            <span class="tag">Login Form</span>
+            <span class="tag">Minimal</span>
+            <span class="tag">Clean UI</span>
+          </div>
+        </div>
+
+        <div class="example-card">
+          <div class="example-icon bg-blue">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+              <line x1="8" y1="21" x2="16" y2="21"/>
+              <line x1="12" y1="17" x2="12" y2="21"/>
+            </svg>
+          </div>
+          <h3>Frameless Window</h3>
+          <p>Demonstração de janela customizada sem bordas do Windows. Inclui cantos arredondados, barra de título personalizada e controles de janela customizados.</p>
+          <div class="example-features">
+            <span><span class="check">✓</span> Sem bordas</span>
+            <span><span class="check">✓</span> Cantos arredondados</span>
+            <span><span class="check">✓</span> Título customizado</span>
+          </div>
+          <div class="example-tags">
+            <span class="tag">Frameless</span>
+            <span class="tag">Rounded</span>
+            <span class="tag">Custom Titlebar</span>
+            <span class="tag">Modern</span>
+          </div>
+        </div>
+
+        <div class="example-card">
+          <div class="example-icon bg-orange">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M3 3v18h18"/>
+              <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
+            </svg>
+          </div>
+          <h3>Interactive Patcher</h3>
+          <p>Patcher interativo com botões funcionais, barra de progresso dinâmica, status de download em tempo real e integração completa com os callbacks do Kafra.</p>
+          <div class="example-features">
+            <span><span class="check">✓</span> Botões funcionais</span>
+            <span><span class="check">✓</span> Progresso em tempo real</span>
+            <span><span class="check">✓</span> Callbacks JS</span>
+          </div>
+          <div class="example-tags">
+            <span class="tag">Interactive</span>
+            <span class="tag">Live Progress</span>
+            <span class="tag">Callbacks</span>
+            <span class="tag">Dynamic</span>
+          </div>
+        </div>
+
+        <div class="example-card">
+          <div class="example-icon bg-pink">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+          </div>
+          <h3>Game Launcher</h3>
+          <p>Launcher completo estilo AAA com vídeo de fundo, música ambiente, notícias do servidor e integração total com o sistema de patches.</p>
+          <div class="example-features">
+            <span><span class="check">✓</span> Vídeo de fundo</span>
+            <span><span class="check">✓</span> Música ambiente</span>
+            <span><span class="check">✓</span> Notícias integradas</span>
+          </div>
+          <div class="example-tags">
+            <span class="tag">Video BG</span>
+            <span class="tag">BGM</span>
+            <span class="tag">News</span>
+            <span class="tag">AAA Style</span>
+          </div>
+        </div>
+
+        <div class="example-card">
+          <div class="example-icon bg-yellow">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 11h4M8 9v4M12 11h4M14 9v4M18 11h2M2 11h2M12 3v2M12 19v2"/>
+            </svg>
+          </div>
+          <h3>Classic RO Style</h3>
+          <p>Interface inspirada no design clássico de Ragnarok Online. Cores temáticas, elementos visuais nostálgicos e experiência autêntica para fãs do jogo.</p>
+          <div class="example-features">
+            <span><span class="check">✓</span> Estilo clássico</span>
+            <span><span class="check">✓</span> Cores temáticas</span>
+            <span><span class="check">✓</span> Experiência RO</span>
+          </div>
+          <div class="example-tags">
+            <span class="tag">Classic</span>
+            <span class="tag">RO Theme</span>
+            <span class="tag">Nostalgic</span>
+            <span class="tag">Themed</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="examples-cta">
+        <div class="cta-card">
+          <h3>Quer contribuir com um exemplo?</h3>
+          <p>Sua UI personalizada pode ajudar outros desenvolvedores. Contribua com a comunidade!</p>
+          <div class="cta-buttons">
+            <a href="https://github.com/ArturllVale/Kafra-Patcher/tree/main/examples" target="_blank" class="btn btn-outline-green">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+              </svg>
+              Ver Exemplos no GitHub
+            </a>
+            <a href="https://github.com/ArturllVale/Kafra-Patcher/blob/main/CONTRIBUTING.md" target="_blank" class="btn btn-outline">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/>
+              </svg>
+              Como Contribuir
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-bg"></div>
+    <div class="container">
+      <div class="footer-divider"></div>
+      
+      <div class="footer-grid">
+        <div class="footer-brand">
+          <div class="brand">
+            <div class="brand-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 11h4M8 9v4M12 11h4M14 9v4M18 11h2M2 11h2M12 3v2M12 19v2"/>
+              </svg>
+            </div>
+            <span class="brand-text">Kafra Patcher</span>
+          </div>
+          <p>Patcher customizável e multiplataforma para clientes Ragnarok Online. Desenvolvido com Rust para máxima performance e segurança.</p>
+          <a href="https://github.com/ArturllVale/Kafra-Patcher" target="_blank" class="footer-social">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+          </a>
+        </div>
+
+        <div class="footer-links">
+          <h4>Links</h4>
+          <ul>
+            <li><a href="https://github.com/ArturllVale/Kafra-Patcher/releases" target="_blank">Releases</a></li>
+            <li><a href="#features">Documentação</a></li>
+            <li><a href="#mkpatch">mkpatch Tool</a></li>
+            <li><a href="#examples">Exemplos</a></li>
+            <li><a href="https://github.com/ArturllVale/Kafra-Patcher/issues" target="_blank">Issues</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-license">
+          <h4>Licença</h4>
+          <p>Distribuído sob licença CC BY-NC 4.0</p>
+          <p class="copyright">Copyright © 2020-2026<br>Kafra Patcher developers</p>
+        </div>
+      </div>
+
+      <div class="footer-divider"></div>
+
+      <div class="footer-bottom">
+        <p>Desenvolvido com Rust por L1nkZ e mantido por Lumen#0110</p>
+        <p>Baseado no projeto rpatchur</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
