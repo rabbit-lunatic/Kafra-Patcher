@@ -327,7 +327,11 @@ pub fn apply_patch_to_disk<R: Read + Seek>(
                 }
             }
             if let Err(err) = fs::rename(&backup, &dest) {
-                log::warn!("Failed to restore {:?} from backup during rollback: {}", dest, err);
+                log::warn!(
+                    "Failed to restore {:?} from backup during rollback: {}",
+                    dest,
+                    err
+                );
             }
         }
         let _ = fs::remove_dir_all(&backup_dir);
