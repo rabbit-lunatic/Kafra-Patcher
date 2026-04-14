@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::env;
 use std::fs;
 use std::io::{Read, Seek};
@@ -240,36 +241,105 @@ pub fn apply_patch_to_disk<R: Read + Seek>(
     root_directory: impl AsRef<Path>,
     thor_archive: &mut ThorArchive<R>,
 ) -> Result<()> {
-    // TODO(LinkZ): Save original files before updating/removing them in order
-    // to be able to restore them in case of failure
-    // TODO(LinkZ): Make async?
+    let root_directory = root_directory.as_ref();
+    let backup_dir = root_directory.join(".patch_backup");
+    if backup_dir.exists() {
+        fs::remove_dir_all(&backup_dir)?;
+    }
+    fs::create_dir_all(&backup_dir)?;
+
+    let mut backed_up_files = Vec::new();
+    let mut created_files = Vec::new();
+    let mut seen_files = HashSet::new();
+
     let mut file_entries: Vec<ThorFileEntry> = thor_archive
         .get_entries()
         .filter(|e| !e.is_internal())
         .cloned()
         .collect();
     file_entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
-    for entry in file_entries {
-        let mut dest_path =
-            join_windows_relative_path(root_directory.as_ref(), &entry.relative_path);
-        if let Ok(current_exe) = env::current_exe() {
-            if dest_path == current_exe {
-                dest_path = dest_path.with_extension("exe.new");
-            }
-        }
 
-        if entry.is_removed {
-            // Try to remove file and ignore errors (file might not exist)
-            let _ignore = fs::remove_file(dest_path);
-        } else {
-            // Create parent directory if needed
-            if let Some(parent_dir) = dest_path.parent() {
-                fs::create_dir_all(parent_dir)?
+    let apply_result = (|| -> Result<()> {
+        for entry in file_entries {
+            let mut dest_path = join_windows_relative_path(root_directory, &entry.relative_path);
+            if let Ok(current_exe) = env::current_exe() {
+                if dest_path == current_exe {
+                    dest_path = dest_path.with_extension("exe.new");
+                }
             }
-            // Extract file
-            thor_archive.extract_file(&entry.relative_path, &dest_path)?;
+
+            if !seen_files.contains(&dest_path) {
+                if dest_path.exists() {
+                    // Backup existing file
+                    let relative_path = dest_path
+                        .strip_prefix(root_directory)
+                        .with_context(|| "Failed to strip root directory prefix")?;
+                    let backup_path = backup_dir.join(relative_path);
+                    if let Some(parent) = backup_path.parent() {
+                        fs::create_dir_all(parent)?;
+                    }
+                    fs::rename(&dest_path, &backup_path)
+                        .with_context(|| format!("Failed to backup file {:?}", dest_path))?;
+                    backed_up_files.push((dest_path.clone(), backup_path));
+                } else if !entry.is_removed {
+                    created_files.push(dest_path.clone());
+                }
+                seen_files.insert(dest_path.clone());
+            } else if entry.is_removed {
+                // If it was already seen, it's either in created_files or backed_up_files.
+                // If we are now removing it, we should just delete it from disk if it was just created/updated.
+                // Actually, if it's in created_files, it will be deleted on rollback.
+                // If it's in backed_up_files, it will be restored on rollback.
+                // For now, we just need to make sure it's removed from its current location.
+                let _ = fs::remove_file(&dest_path);
+            }
+
+            if !entry.is_removed {
+                // Create parent directory if needed
+                if let Some(parent_dir) = dest_path.parent() {
+                    fs::create_dir_all(parent_dir)?
+                }
+                // Extract file
+                thor_archive
+                    .extract_file(&entry.relative_path, &dest_path)
+                    .with_context(|| format!("Failed to extract file {:?}", dest_path))?;
+            }
         }
+        Ok(())
+    })();
+
+    if let Err(e) = apply_result {
+        // Restore backup on failure
+        log::error!("Patching failed, restoring backup: {}", e);
+        for path in created_files {
+            let _ = fs::remove_file(&path);
+        }
+        for (dest, backup) in backed_up_files {
+            // On Windows, rename fails if the destination already exists.
+            if dest.exists() {
+                let res = if dest.is_dir() {
+                    fs::remove_dir_all(&dest)
+                } else {
+                    fs::remove_file(&dest)
+                };
+                if let Err(err) = res {
+                    log::warn!("Failed to remove {:?} during rollback: {}", dest, err);
+                }
+            }
+            if let Err(err) = fs::rename(&backup, &dest) {
+                log::warn!(
+                    "Failed to restore {:?} from backup during rollback: {}",
+                    dest,
+                    err
+                );
+            }
+        }
+        let _ = fs::remove_dir_all(&backup_dir);
+        return Err(e);
     }
+
+    // Success, remove backup
+    let _ = fs::remove_dir_all(&backup_dir);
     Ok(())
 }
 
@@ -288,6 +358,53 @@ mod tests {
     use super::*;
     use tempfile::tempdir;
     use walkdir::WalkDir;
+
+    #[test]
+    fn test_apply_patch_backup_rollback() {
+        let thor_dir_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("resources/tests/thor");
+        let temp_dir = tempdir().expect("Failed to create temp dir");
+        let root = temp_dir.path();
+
+        let thor_archive_path = thor_dir_path.join("dir2.thor");
+        let thor_data = fs::read(&thor_archive_path).expect("Failed to read thor archive file");
+        let mut thor_archive = ThorArchive::new(std::io::Cursor::new(thor_data))
+            .expect("Failed to parse thor archive");
+
+        // 1. Prepare an existing file that should be preserved/restored.
+        // dir2.thor contains ASPLnchr.exe
+        let existing_file_path = root.join("ASPLnchr.exe");
+        let original_content = b"original content";
+        fs::write(&existing_file_path, original_content).expect("Failed to write existing file");
+
+        // 2. Prepare a failure: create a file where a directory is expected.
+        // dir2.thor contains "savedata\\MiniPartyInfo.lua"
+        let conflict_path = root.join("savedata");
+        fs::write(&conflict_path, "conflict").expect("Failed to create conflict file");
+
+        // Attempt patching
+        let result = apply_patch_to_disk(root, &mut thor_archive);
+
+        // Verify failure
+        assert!(result.is_err(), "Patching should have failed");
+
+        // Verify restoration/preservation
+        assert!(
+            existing_file_path.exists(),
+            "Existing file should still exist"
+        );
+        assert_eq!(
+            fs::read(&existing_file_path).unwrap(),
+            original_content,
+            "Content should be restored"
+        );
+
+        // Verify conflict file still exists
+        assert!(conflict_path.exists());
+        assert!(conflict_path.is_file());
+
+        // Verify backup dir is removed
+        assert!(!root.join(".patch_backup").exists());
+    }
 
     #[test]
     fn test_apply_patch_to_disk() {
