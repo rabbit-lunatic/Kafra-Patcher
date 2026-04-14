@@ -365,24 +365,20 @@ mod tests {
         let temp_dir = tempdir().expect("Failed to create temp dir");
         let root = temp_dir.path();
 
-        let thor_archive_path = thor_dir_path.join("small.thor");
+        let thor_archive_path = thor_dir_path.join("dir2.thor");
         let thor_data = fs::read(&thor_archive_path).expect("Failed to read thor archive file");
         let mut thor_archive = ThorArchive::new(std::io::Cursor::new(thor_data))
             .expect("Failed to parse thor archive");
 
         // 1. Prepare an existing file that should be preserved/restored.
-        let existing_file_relative = "data\\wav\\se_subterranean_rustyengine.wav";
-        let existing_file_path = join_windows_relative_path(root, existing_file_relative);
-        fs::create_dir_all(existing_file_path.parent().unwrap())
-            .expect("Failed to create parent dir for existing file");
+        // dir2.thor contains ASPLnchr.exe
+        let existing_file_path = root.join("ASPLnchr.exe");
         let original_content = b"original content";
         fs::write(&existing_file_path, original_content).expect("Failed to write existing file");
 
         // 2. Prepare a failure: create a file where a directory is expected.
-        // "data\\texture" is a parent for many files in small.thor.
-        // It's a sibling of "data\\wav", so creating it as a file won't affect existing_file_path.
-        let conflict_path = root.join("data").join("texture");
-        fs::create_dir_all(conflict_path.parent().unwrap()).unwrap();
+        // dir2.thor contains "savedata\\MiniPartyInfo.lua"
+        let conflict_path = root.join("savedata");
         fs::write(&conflict_path, "conflict").expect("Failed to create conflict file");
 
         // Attempt patching
