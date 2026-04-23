@@ -132,35 +132,50 @@ impl GrfArchive {
     }
 
     pub fn get_entry_raw_data<S: AsRef<str> + Hash>(&mut self, file_path: S) -> Result<Vec<u8>> {
-        let file_entry = self
-            .get_file_entry(file_path)
-            .ok_or(GrufError::EntryNotFound)?
-            .clone();
-        if file_entry.size == 0 {
+        let (offset, size, size_compressed_aligned) = {
+            let file_entry = self
+                .get_file_entry(file_path)
+                .ok_or(GrufError::EntryNotFound)?;
+            (
+                file_entry.offset,
+                file_entry.size,
+                file_entry.size_compressed_aligned,
+            )
+        };
+
+        if size == 0 {
             return Ok(vec![]);
         }
 
-        self.obj.seek(SeekFrom::Start(file_entry.offset))?;
-        let mut content: Vec<u8> = Vec::with_capacity(file_entry.size_compressed_aligned);
+        self.obj.seek(SeekFrom::Start(offset))?;
+        let mut content: Vec<u8> = Vec::with_capacity(size_compressed_aligned);
         let mut file_chunk = self.obj.by_ref().take(content.capacity() as u64);
         file_chunk.read_to_end(&mut content)?;
         Ok(content)
     }
 
     pub fn read_file_content<S: AsRef<str> + Hash>(&mut self, file_path: S) -> Result<Vec<u8>> {
-        let file_entry = self
-            .get_file_entry(file_path)
-            .ok_or(GrufError::EntryNotFound)?
-            .clone();
-        if file_entry.size == 0 {
+        let (offset, size, size_compressed_aligned, encryption) = {
+            let file_entry = self
+                .get_file_entry(file_path)
+                .ok_or(GrufError::EntryNotFound)?;
+            (
+                file_entry.offset,
+                file_entry.size,
+                file_entry.size_compressed_aligned,
+                file_entry.encryption.clone(),
+            )
+        };
+
+        if size == 0 {
             return Ok(vec![]);
         }
 
-        self.obj.seek(SeekFrom::Start(file_entry.offset))?;
-        let mut content: Vec<u8> = Vec::with_capacity(file_entry.size_compressed_aligned);
+        self.obj.seek(SeekFrom::Start(offset))?;
+        let mut content: Vec<u8> = Vec::with_capacity(size_compressed_aligned);
         let mut file_chunk = self.obj.by_ref().take(content.capacity() as u64);
         file_chunk.read_to_end(&mut content)?;
-        match file_entry.encryption {
+        match encryption {
             GrfFileEncryption::Unencrypted => {}
             GrfFileEncryption::Encrypted(cycle) => {
                 let key_buffer: [u8; 8] = self
@@ -179,7 +194,7 @@ impl GrfArchive {
         let mut decoder = ZlibDecoder::new(content.as_slice());
         let mut decompressed_content = Vec::new();
         let decompressed_size = decoder.read_to_end(&mut decompressed_content)?;
-        if decompressed_size != file_entry.size {
+        if decompressed_size != size {
             return Err(GrufError::parsing_error(
                 "Decompressed content is not as expected",
             ));
