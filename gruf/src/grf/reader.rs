@@ -194,7 +194,7 @@ impl GrfArchive {
         let mut decoder = ZlibDecoder::new(content.as_slice());
         let mut decompressed_content = Vec::new();
         let decompressed_size = decoder.read_to_end(&mut decompressed_content)?;
-        if decompressed_size != file_entry.size {
+        if decompressed_size != size {
             return Err(GrufError::parsing_error(
                 "Decompressed content is not as expected",
             ));
