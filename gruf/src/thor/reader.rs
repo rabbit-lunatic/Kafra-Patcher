@@ -183,6 +183,53 @@ impl<R: Read + Seek> ThorArchive<R> {
         self.container.entries.values()
     }
 
+    /// Takes the ownership of the entries from the archive.
+    /// Leaving the archive entries empty.
+    pub fn take_entries(
+        &mut self,
+    ) -> std::collections::hash_map::IntoValues<String, ThorFileEntry> {
+        std::mem::take(&mut self.container.entries).into_values()
+    }
+
+    pub fn get_entry_raw_data_by_entry(&mut self, file_entry: &ThorFileEntry) -> Result<Vec<u8>> {
+        if file_entry.size_compressed == 0 {
+            return Ok(vec![]);
+        }
+
+        self.obj.seek(SeekFrom::Start(file_entry.offset))?;
+        let mut content: Vec<u8> = Vec::with_capacity(file_entry.size_compressed);
+        let mut file_chunk = self.obj.by_ref().take(content.capacity() as u64);
+        file_chunk.read_to_end(&mut content)?;
+        Ok(content)
+    }
+
+    pub fn read_file_content_by_entry(&mut self, file_entry: &ThorFileEntry) -> Result<Vec<u8>> {
+        let content = self.get_entry_raw_data_by_entry(file_entry)?;
+        if content.is_empty() {
+            return Ok(vec![]);
+        }
+        // Decompress the content with zlib
+        let mut decoder = ZlibDecoder::new(content.as_slice());
+        let mut decompressed_content = Vec::new();
+        let decompressed_size = decoder.read_to_end(&mut decompressed_content)?;
+        if decompressed_size != file_entry.size {
+            return Err(GrufError::parsing_error(
+                "Decompressed content is not as expected",
+            ));
+        }
+        Ok(decompressed_content)
+    }
+
+    pub fn extract_file_by_entry(
+        &mut self,
+        file_entry: &ThorFileEntry,
+        destination_path: &Path,
+    ) -> Result<()> {
+        let content = self.read_file_content_by_entry(file_entry)?;
+        let mut file = File::create(destination_path)?;
+        Ok(file.write_all(content.as_slice())?)
+    }
+
     /// Checks if the container has been unintentionnaly corrupted
     pub fn is_valid(&mut self) -> Result<bool> {
         let integrity_data = self.read_file_content(INTEGRITY_FILE_NAME)?;

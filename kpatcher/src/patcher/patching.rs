@@ -79,26 +79,23 @@ fn apply_grf_to_grf_oop(
     let original_version_minor = target_archive.version_minor();
 
     // Process GRF entries directly, skipping those overwritten by the patch
-    let mut target_paths: Vec<(u64, String)> = target_archive
-        .get_entries()
+    let mut target_entries: Vec<gruf::grf::GrfFileEntry> = target_archive
+        .take_entries()
         .filter_map(|entry| {
             if source_grf.get_file_entry(&entry.relative_path).is_some() {
                 None
             } else {
-                Some((entry.offset, entry.relative_path.clone()))
+                Some(entry)
             }
         })
         .collect();
     // Sort by offset for optimal sequential read performance
-    target_paths.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+    target_entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
 
     // Process patch entries directly
-    let mut source_paths: Vec<(u64, String)> = source_grf
-        .get_entries()
-        .map(|entry| (entry.offset, entry.relative_path.clone()))
-        .collect();
+    let mut source_entries: Vec<gruf::grf::GrfFileEntry> = source_grf.take_entries().collect();
     // Sort by offset for optimal sequential read performance
-    source_paths.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+    source_entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
 
     // Build the patched GRF; restore backup on failure
     let build_result = (|| -> Result<()> {
@@ -107,11 +104,11 @@ fn apply_grf_to_grf_oop(
         let mut builder =
             GrfArchiveBuilder::create(grf_file, original_version_major, original_version_minor)?;
 
-        for (_, path) in target_paths {
-            builder.import_raw_entry_from_grf(&mut target_archive, path)?;
+        for entry in target_entries {
+            builder.import_entry_from_grf(&mut target_archive, entry)?;
         }
-        for (_, path) in source_paths {
-            builder.import_raw_entry_from_grf(source_grf, path)?;
+        for entry in source_entries {
+            builder.import_entry_from_grf(source_grf, entry)?;
         }
         Ok(())
     })();
@@ -139,16 +136,21 @@ fn apply_patch_to_grf_ip<R: Read + Seek>(
 ) -> Result<()> {
     let mut builder = GrfArchiveBuilder::open(grf_file_path)?;
     let mut thor_entries: Vec<ThorFileEntry> = thor_archive
-        .get_entries()
-        .filter(|e| !e.is_internal())
-        .cloned()
+        .take_entries()
+        .filter_map(|entry| {
+            if !entry.is_internal() {
+                Some(entry)
+            } else {
+                None
+            }
+        })
         .collect();
     thor_entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
     for entry in thor_entries {
         if entry.is_removed {
             let _ = builder.remove_file(&entry.relative_path);
         } else {
-            builder.import_raw_entry_from_thor(thor_archive, entry.relative_path)?;
+            builder.import_entry_from_thor(thor_archive, entry)?;
         }
     }
     Ok(())
@@ -174,37 +176,37 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
     let original_version_minor = grf_archive.version_minor();
 
     // Process GRF entries directly, skipping those removed or overwritten by the patch
-    let mut grf_paths: Vec<(u64, String)> = grf_archive
-        .get_entries()
+    let mut grf_entries: Vec<gruf::grf::GrfFileEntry> = grf_archive
+        .take_entries()
         .filter_map(|entry| {
             if let Some(e) = thor_archive.get_file_entry(&entry.relative_path) {
                 // If the patch has an internal file with the same name, we should keep the GRF one,
                 // because the patch won't overwrite it.
                 if !e.is_removed && e.is_internal() {
-                    return Some((entry.offset, entry.relative_path.clone()));
+                    return Some(entry);
                 }
                 // Skip if removed or overwritten by the patch
                 return None;
             }
-            Some((entry.offset, entry.relative_path.clone()))
+            Some(entry)
         })
         .collect();
     // Sort by offset for optimal sequential read performance
-    grf_paths.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+    grf_entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
 
     // Process patch entries directly
-    let mut thor_paths: Vec<(u64, String)> = thor_archive
-        .get_entries()
+    let mut thor_entries: Vec<ThorFileEntry> = thor_archive
+        .take_entries()
         .filter_map(|entry| {
             if entry.is_removed || entry.is_internal() {
                 None
             } else {
-                Some((entry.offset, entry.relative_path.clone()))
+                Some(entry)
             }
         })
         .collect();
     // Sort by offset for optimal sequential read performance
-    thor_paths.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+    thor_entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
 
     // Build the patched GRF; restore backup on failure
     let build_result = (|| -> Result<()> {
@@ -213,11 +215,11 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
         let mut builder =
             GrfArchiveBuilder::create(grf_file, original_version_major, original_version_minor)?;
 
-        for (_, path) in grf_paths {
-            builder.import_raw_entry_from_grf(&mut grf_archive, path)?;
+        for entry in grf_entries {
+            builder.import_entry_from_grf(&mut grf_archive, entry)?;
         }
-        for (_, path) in thor_paths {
-            builder.import_raw_entry_from_thor(thor_archive, path)?;
+        for entry in thor_entries {
+            builder.import_entry_from_thor(thor_archive, entry)?;
         }
         Ok(())
     })();
@@ -253,9 +255,14 @@ pub fn apply_patch_to_disk<R: Read + Seek>(
     let mut seen_files = HashSet::new();
 
     let mut file_entries: Vec<ThorFileEntry> = thor_archive
-        .get_entries()
-        .filter(|e| !e.is_internal())
-        .cloned()
+        .take_entries()
+        .filter_map(|entry| {
+            if !entry.is_internal() {
+                Some(entry)
+            } else {
+                None
+            }
+        })
         .collect();
     file_entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
 
@@ -301,7 +308,7 @@ pub fn apply_patch_to_disk<R: Read + Seek>(
                 }
                 // Extract file
                 thor_archive
-                    .extract_file(&entry.relative_path, &dest_path)
+                    .extract_file_by_entry(&entry, &dest_path)
                     .with_context(|| format!("Failed to extract file {:?}", dest_path))?;
             }
         }
@@ -430,15 +437,16 @@ mod tests {
             assert!(!expected_file_path.exists());
             assert_eq!(0, count_files(temp_dir.path()));
 
+            let expected_content = thor_archive
+                .read_file_content(r"data\wav\se_subterranean_rustyengine.wav")
+                .unwrap();
+
             apply_patch_to_disk(temp_dir.path(), &mut thor_archive).unwrap();
 
             // After patching
             assert!(expected_file_path.exists());
             assert_eq!(nb_of_added_files, count_files(temp_dir.path()));
             // Check content
-            let expected_content = thor_archive
-                .read_file_content(r"data\wav\se_subterranean_rustyengine.wav")
-                .unwrap();
             let actual_content = fs::read(&expected_file_path).unwrap();
             assert_eq!(expected_content, actual_content);
         }
