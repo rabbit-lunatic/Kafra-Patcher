@@ -131,16 +131,25 @@ impl<W: Write + Seek> GrfArchiveBuilder<W> {
         thor_archive: &mut ThorArchive<R>,
         relative_path: String,
     ) -> Result<()> {
-        if self.version_major < 2 {
-            let content = thor_archive.read_file_content(&relative_path)?;
-            return self.add_file(relative_path, content.as_slice());
-        }
-
         let entry = thor_archive
             .get_file_entry(&relative_path)
             .ok_or(GrufError::EntryNotFound)?
             .clone();
-        let content = thor_archive.get_entry_raw_data(&relative_path)?;
+        self.import_entry_from_thor(thor_archive, entry)
+    }
+
+    pub fn import_entry_from_thor<R: Read + Seek>(
+        &mut self,
+        thor_archive: &mut ThorArchive<R>,
+        entry: crate::thor::ThorFileEntry,
+    ) -> Result<()> {
+        if self.version_major < 2 {
+            let content = thor_archive.read_file_content_by_entry(&entry)?;
+            return self.add_file(entry.relative_path, content.as_slice());
+        }
+
+        let content = thor_archive.get_entry_raw_data_by_entry(&entry)?;
+        let relative_path = entry.relative_path.clone();
         let offset = {
             if let Some(grf_entry) = self.entries.get(&relative_path) {
                 self.chunks.realloc_chunk(
