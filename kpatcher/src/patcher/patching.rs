@@ -81,7 +81,7 @@ fn apply_grf_to_grf_oop(
     // Process GRF entries directly, skipping those overwritten by the patch
     let mut target_entries: Vec<gruf::grf::GrfFileEntry> = target_archive
         .take_entries()
-        .filter_map(|(_, entry)| {
+        .filter_map(|entry| {
             if source_grf.get_file_entry(&entry.relative_path).is_some() {
                 None
             } else {
@@ -137,7 +137,7 @@ fn apply_patch_to_grf_ip<R: Read + Seek>(
     let mut builder = GrfArchiveBuilder::open(grf_file_path)?;
     let mut thor_entries: Vec<ThorFileEntry> = thor_archive
         .take_entries()
-        .filter_map(|(_, entry)| {
+        .filter_map(|entry| {
             if !entry.is_internal() {
                 Some(entry)
             } else {
@@ -178,7 +178,7 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
     // Process GRF entries directly, skipping those removed or overwritten by the patch
     let mut grf_entries: Vec<gruf::grf::GrfFileEntry> = grf_archive
         .take_entries()
-        .filter_map(|(_, entry)| {
+        .filter_map(|entry| {
             if let Some(e) = thor_archive.get_file_entry(&entry.relative_path) {
                 // If the patch has an internal file with the same name, we should keep the GRF one,
                 // because the patch won't overwrite it.
@@ -197,7 +197,7 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
     // Process patch entries directly
     let mut thor_entries: Vec<ThorFileEntry> = thor_archive
         .take_entries()
-        .filter_map(|(_, entry)| {
+        .filter_map(|entry| {
             if entry.is_removed || entry.is_internal() {
                 None
             } else {
@@ -256,7 +256,7 @@ pub fn apply_patch_to_disk<R: Read + Seek>(
 
     let mut file_entries: Vec<ThorFileEntry> = thor_archive
         .take_entries()
-        .filter_map(|(_, entry)| {
+        .filter_map(|entry| {
             if !entry.is_internal() {
                 Some(entry)
             } else {

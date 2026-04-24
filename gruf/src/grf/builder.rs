@@ -96,7 +96,7 @@ impl<W: Write + Seek> GrfArchiveBuilder<W> {
             return self.add_file(entry.relative_path, content.as_slice());
         }
         let content = archive.get_entry_raw_data_by_entry(&entry)?;
-        let relative_path = entry.relative_path.clone();
+        let relative_path = entry.relative_path;
         let offset = {
             if let Some(grf_entry) = self.entries.get(&relative_path) {
                 self.chunks.realloc_chunk(
@@ -149,7 +149,7 @@ impl<W: Write + Seek> GrfArchiveBuilder<W> {
         }
 
         let content = thor_archive.get_entry_raw_data_by_entry(&entry)?;
-        let relative_path = entry.relative_path.clone();
+        let relative_path = entry.relative_path;
         let offset = {
             if let Some(grf_entry) = self.entries.get(&relative_path) {
                 self.chunks.realloc_chunk(
