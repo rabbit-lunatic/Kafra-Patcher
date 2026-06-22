@@ -273,9 +273,10 @@ async fn find_available_patch_server(
 ) -> InterruptibleFnResult<(ThorPatchList, Url)> {
     // Probe the preferred server first if it's specified and valid
     if let Some(preferred_server_name) = preferred_server_name {
+        let preferred_server_str = preferred_server_name.as_str();
         let preferred_server = server_list
             .iter()
-            .find(|s| &s.name == preferred_server_name);
+            .find(|s| s.name.as_str() == preferred_server_str);
         if let Some(preferred_server) = preferred_server {
             if let Ok((patch_list, patch_url)) = probe_patch_server(client, preferred_server).await
             {
@@ -404,7 +405,7 @@ async fn download_patches_concurrent(
         },
     }?;
     // Sort patches by index before returning
-    vec.sort_unstable_by(|l, r| l.info.index.cmp(&r.info.index));
+    vec.sort_unstable_by_key(|l| l.info.index);
     Ok(vec)
 }
 

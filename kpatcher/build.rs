@@ -5,7 +5,8 @@ fn main() {
     res.set_icon("resources/kpatcher.ico");
     // Embed DPI-awareness manifest (Per-Monitor V2) to prevent
     // Windows bitmap scaling on notebooks with display scaling (110%, 125%, etc.)
-    res.set_manifest(r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    res.set_manifest(
+        r#"<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
   <application xmlns="urn:schemas-microsoft-com:asm.v3">
     <windowsSettings>
@@ -17,7 +18,8 @@ fn main() {
       </dpiAware>
     </windowsSettings>
   </application>
-</assembly>"#);
+</assembly>"#,
+    );
 
     // Note: winres will automatically use the [package.metadata.winres] info from Cargo.toml
     // for version info, etc.
