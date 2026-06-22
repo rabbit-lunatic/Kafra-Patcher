@@ -405,7 +405,7 @@ async fn download_patches_concurrent(
         },
     }?;
     // Sort patches by index before returning
-    vec.sort_unstable_by(|l, r| l.info.index.cmp(&r.info.index));
+    vec.sort_unstable_by_key(|l| l.info.index);
     Ok(vec)
 }
 

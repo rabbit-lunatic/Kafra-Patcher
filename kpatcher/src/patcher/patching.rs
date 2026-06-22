@@ -56,7 +56,7 @@ fn apply_grf_to_grf_ip(
     let mut builder = GrfArchiveBuilder::open(target_grf_path)?;
     let mut entries: Vec<gruf::grf::GrfFileEntry> = source_grf.take_entries().collect();
     // Sort by offset for optimal sequential read performance
-    entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
+    entries.sort_unstable_by_key(|a| a.offset);
     for entry in entries {
         builder.import_entry_from_grf(source_grf, entry)?;
     }
@@ -90,12 +90,12 @@ fn apply_grf_to_grf_oop(
         })
         .collect();
     // Sort by offset for optimal sequential read performance
-    target_entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
+    target_entries.sort_unstable_by_key(|a| a.offset);
 
     // Process patch entries directly
     let mut source_entries: Vec<gruf::grf::GrfFileEntry> = source_grf.take_entries().collect();
     // Sort by offset for optimal sequential read performance
-    source_entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
+    source_entries.sort_unstable_by_key(|a| a.offset);
 
     // Build the patched GRF; restore backup on failure
     let build_result = (|| -> Result<()> {
@@ -145,7 +145,7 @@ fn apply_patch_to_grf_ip<R: Read + Seek>(
             }
         })
         .collect();
-    thor_entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
+    thor_entries.sort_unstable_by_key(|a| a.offset);
     for entry in thor_entries {
         if entry.is_removed {
             let _ = builder.remove_file(&entry.relative_path);
@@ -192,7 +192,7 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
         })
         .collect();
     // Sort by offset for optimal sequential read performance
-    grf_entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
+    grf_entries.sort_unstable_by_key(|a| a.offset);
 
     // Process patch entries directly
     let mut thor_entries: Vec<ThorFileEntry> = thor_archive
@@ -206,7 +206,7 @@ fn apply_patch_to_grf_oop<R: Read + Seek>(
         })
         .collect();
     // Sort by offset for optimal sequential read performance
-    thor_entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
+    thor_entries.sort_unstable_by_key(|a| a.offset);
 
     // Build the patched GRF; restore backup on failure
     let build_result = (|| -> Result<()> {
@@ -264,7 +264,7 @@ pub fn apply_patch_to_disk<R: Read + Seek>(
             }
         })
         .collect();
-    file_entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
+    file_entries.sort_unstable_by_key(|a| a.offset);
 
     let apply_result = (|| -> Result<()> {
         for entry in file_entries {
