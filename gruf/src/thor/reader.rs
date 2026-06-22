@@ -31,7 +31,7 @@ pub fn patch_list_from_string(content: &str) -> ThorPatchList {
         .filter_map(ThorPatchInfo::from_string)
         .collect();
     // Sort patch list by index
-    sorted_patch_list.sort_by(|a, b| a.index.cmp(&b.index));
+    sorted_patch_list.sort_by_key(|a| a.index);
     sorted_patch_list
 }
 

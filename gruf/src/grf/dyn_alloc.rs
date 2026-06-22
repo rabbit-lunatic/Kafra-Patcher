@@ -21,7 +21,7 @@ pub fn list_available_chunks(archive: &mut GrfArchive) -> Result<AvailableChunkL
     }
 
     let mut entries: Vec<&GrfFileEntry> = archive.get_entries().collect();
-    entries.sort_unstable_by(|a, b| a.offset.cmp(&b.offset));
+    entries.sort_unstable_by_key(|a| a.offset);
 
     let mut chunks_sizes = BTreeSet::new();
     let mut available_chunks = BTreeMap::new();
