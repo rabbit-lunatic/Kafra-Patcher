@@ -1,5 +1,6 @@
+use std::borrow::Borrow;
 use std::boxed::Box;
-use std::collections::HashMap;
+use std::collections::HashSet;
 use std::convert::TryInto;
 use std::fs::File;
 use std::hash::{Hash, Hasher};
@@ -53,7 +54,7 @@ impl GrfArchive {
                         container: GrfContainer {
                             header: grf_header,
                             table_info: GrfTableInfo::Compressed(grf_table_info),
-                            entries: HashMap::new(),
+                            entries: HashSet::new(),
                         },
                     });
                 }
@@ -95,7 +96,7 @@ impl GrfArchive {
                         container: GrfContainer {
                             header: grf_header,
                             table_info: GrfTableInfo::Uncompressed(GrfTableInfo1 { table_size }),
-                            entries: HashMap::new(),
+                            entries: HashSet::new(),
                         },
                     });
                 }
@@ -203,7 +204,7 @@ impl GrfArchive {
     }
 
     pub fn contains_file<S: AsRef<str> + Hash>(&self, file_path: S) -> bool {
-        self.container.entries.contains_key(file_path.as_ref())
+        self.container.entries.contains(file_path.as_ref())
     }
 
     pub fn get_file_entry<S: AsRef<str> + Hash>(&self, file_path: S) -> Option<&GrfFileEntry> {
@@ -211,13 +212,13 @@ impl GrfArchive {
     }
 
     pub fn get_entries(&self) -> impl Iterator<Item = &'_ GrfFileEntry> {
-        self.container.entries.values()
+        self.container.entries.iter()
     }
 
     /// Takes the ownership of the entries from the archive.
     /// Leaving the archive entries empty.
-    pub fn take_entries(&mut self) -> std::collections::hash_map::IntoValues<String, GrfFileEntry> {
-        std::mem::take(&mut self.container.entries).into_values()
+    pub fn take_entries(&mut self) -> std::collections::hash_set::IntoIter<GrfFileEntry> {
+        std::mem::take(&mut self.container.entries).into_iter()
     }
 
     pub fn get_entry_raw_data_by_entry(&mut self, file_entry: &GrfFileEntry) -> Result<Vec<u8>> {
@@ -266,7 +267,7 @@ impl GrfArchive {
 struct GrfContainer {
     pub header: GrfHeader,
     pub table_info: GrfTableInfo,
-    pub entries: HashMap<String, GrfFileEntry>,
+    pub entries: HashSet<GrfFileEntry>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -317,6 +318,12 @@ impl Hash for GrfFileEntry {
 impl PartialEq for GrfFileEntry {
     fn eq(&self, other: &GrfFileEntry) -> bool {
         self.relative_path == other.relative_path
+    }
+}
+
+impl Borrow<str> for GrfFileEntry {
+    fn borrow(&self) -> &str {
+        &self.relative_path
     }
 }
 
@@ -471,16 +478,16 @@ named!(parse_grf_file_entry_200<&[u8], GrfFileEntry>,
     )
 );
 
-named_args!(parse_grf_file_entries_101(files_count: usize)<&[u8], HashMap<String, GrfFileEntry>>,
-fold_many_m_n!(1, files_count, parse_grf_file_entry_101, HashMap::with_capacity(files_count), |mut acc: HashMap<_, _>, item| {
-        acc.insert(item.relative_path.clone(), item);
+named_args!(parse_grf_file_entries_101(files_count: usize)<&[u8], HashSet<GrfFileEntry>>,
+fold_many_m_n!(1, files_count, parse_grf_file_entry_101, HashSet::with_capacity(files_count), |mut acc: HashSet<_>, item| {
+        acc.insert(item);
         acc
     })
 );
 
-named_args!(parse_grf_file_entries_200(files_count: usize)<&[u8], HashMap<String, GrfFileEntry>>,
-fold_many_m_n!(1, files_count, parse_grf_file_entry_200, HashMap::with_capacity(files_count), |mut acc: HashMap<_, _>, item| {
-        acc.insert(item.relative_path.clone(), item);
+named_args!(parse_grf_file_entries_200(files_count: usize)<&[u8], HashSet<GrfFileEntry>>,
+fold_many_m_n!(1, files_count, parse_grf_file_entry_200, HashSet::with_capacity(files_count), |mut acc: HashSet<_>, item| {
+        acc.insert(item);
         acc
     })
 );
@@ -489,6 +496,7 @@ fold_many_m_n!(1, files_count, parse_grf_file_entry_200, HashMap::with_capacity(
 mod tests {
     use super::*;
     use hex_literal::hex;
+    use std::collections::HashMap;
     use std::path::PathBuf;
     use twox_hash::XxHash64;
 
