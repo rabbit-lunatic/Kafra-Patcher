@@ -33,7 +33,14 @@ impl GrfArchive {
     pub fn open<P: AsRef<Path>>(grf_path: P) -> Result<Self> {
         let mut file = File::open(grf_path)?;
         let mut grf_header_buf = [0; GRF_HEADER_SIZE];
-        file.read_exact(&mut grf_header_buf)?;
+        if let Err(e) = file.read_exact(&mut grf_header_buf) {
+            if e.kind() == std::io::ErrorKind::UnexpectedEof {
+                return Err(GrufError::parsing_error(
+                    "File is too small to be a valid GRF archive",
+                ));
+            }
+            return Err(e.into());
+        }
         let (parser_output, grf_header) = parse_grf_header(&grf_header_buf)
             .map_err(|_| GrufError::parsing_error("Failed to parse archive (header)"))?;
 
@@ -43,7 +50,14 @@ impl GrfArchive {
                 file.seek(SeekFrom::Start(
                     GRF_HEADER_SIZE as u64 + grf_header.file_table_offset,
                 ))?;
-                file.read_exact(&mut table_info_buf)?;
+                if let Err(e) = file.read_exact(&mut table_info_buf) {
+                    if e.kind() == std::io::ErrorKind::UnexpectedEof {
+                        return Err(GrufError::parsing_error(
+                            "Unexpected end of file while reading GRF table info",
+                        ));
+                    }
+                    return Err(e.into());
+                }
                 let (_parser_output, grf_table_info) = parse_grf_table_info_200(&table_info_buf)
                     .map_err(|_| {
                         GrufError::parsing_error("Failed to parse archive (table info)")
@@ -617,5 +631,22 @@ mod tests {
         assert_eq!(2, digit_count(99));
         assert_eq!(3, digit_count(100));
         assert_eq!(8, digit_count(87654321));
+    }
+
+    #[test]
+    fn test_open_short_file() {
+        let temp_dir = tempfile::tempdir().unwrap();
+        let short_file_path = temp_dir.path().join("short.grf");
+        // write less than GRF_HEADER_SIZE (46 bytes)
+        std::fs::write(&short_file_path, b"too short").unwrap();
+
+        let result = GrfArchive::open(&short_file_path);
+        assert!(result.is_err());
+        let err = result.unwrap_err();
+        if let GrufError::ParsingError(msg) = err {
+            assert_eq!(msg, "File is too small to be a valid GRF archive");
+        } else {
+            panic!("Expected ParsingError, got {:?}", err);
+        }
     }
 }

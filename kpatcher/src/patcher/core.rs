@@ -25,8 +25,9 @@ use super::cancellation::{
 use super::config::PatchServerInfo;
 use super::patching::{apply_patch_to_disk, apply_patch_to_grf, GrfPatchingMethod};
 use super::{get_patcher_name, PatcherCommand, PatcherConfiguration};
-use crate::patcher::patching::apply_grf_to_grf;
+use crate::patcher::patching::{apply_grf_to_grf, apply_rgz_to_disk};
 use crate::ui::{PatchingStatus, UiController};
+use gruf::rgz::RgzArchive;
 
 /// Representation of a pending patch (a patch that's been downloaded but has
 /// not been applied yet).
@@ -680,10 +681,13 @@ fn apply_patch(
         .map(|e| e.to_lowercase())
         .unwrap_or_default();
 
-    if extension == "rgz" || extension == "gpf" || extension == "grf" {
-        // Handle GRF/RGZ/GPF (Gzipped GRF or regular GRF)
+    if extension == "rgz" {
         let file = fs::File::open(patch_path)?;
-        let mut decoder = GzDecoder::new(file);
+        let rgz_archive = RgzArchive::open(file)?;
+        apply_rgz_to_disk(current_working_dir, rgz_archive)
+    } else if extension == "gpf" || extension == "grf" {
+        // Handle GRF/GPF (Gzipped GRF or regular GRF)
+        let file = fs::File::open(patch_path)?;
 
         // Decompress to a temporary GRF file if needed
         let temp_dir = tempfile::tempdir()?;
@@ -697,11 +701,10 @@ fn apply_patch(
             // apply_grf_to_grf uses `source_grf` which is `&mut GrfArchive`.
             // Let's just copy it to be safe and consistent with RGZ/GPF flow,
             // although for performance avoiding copy would be better.
-            // But wait, `GzDecoder` produces a stream.
-            // Let's just copy the file content to temp_grf_path logic.
             fs::copy(patch_path, &temp_grf_path)?;
         } else {
-            // RGZ/GPF, decompress
+            // GPF, decompress
+            let mut decoder = GzDecoder::new(file);
             let mut temp_grf_file = fs::File::create(&temp_grf_path)?;
             std::io::copy(&mut decoder, &mut temp_grf_file)?;
         }
