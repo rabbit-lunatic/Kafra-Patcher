@@ -594,3 +594,90 @@ mod tests {
         Ok(true)
     }
 }
+
+use gruf::rgz::{RgzArchive, RgzEntry};
+
+/// Patches files located in the game client's directory with an RGZ
+/// archive.
+pub fn apply_rgz_to_disk(root_directory: impl AsRef<Path>, rgz_archive: RgzArchive) -> Result<()> {
+    let root_directory = root_directory.as_ref();
+    let backup_dir = root_directory.join(".patch_backup");
+    if backup_dir.exists() {
+        fs::remove_dir_all(&backup_dir)?;
+    }
+    fs::create_dir_all(&backup_dir)?;
+
+    let mut backed_up_files = Vec::new();
+    let mut created_files = Vec::new();
+    let mut seen_files = HashSet::new();
+
+    let file_entries = rgz_archive.take_entries();
+
+    let apply_result = (|| -> Result<()> {
+        for entry in file_entries {
+            match entry {
+                RgzEntry::Directory { path } => {
+                    let dest_path = join_windows_relative_path(root_directory, &path);
+                    if !dest_path.exists() {
+                        fs::create_dir_all(&dest_path)?;
+                    }
+                }
+                RgzEntry::File { path, data } => {
+                    let mut dest_path = join_windows_relative_path(root_directory, &path);
+                    if let Ok(current_exe) = env::current_exe() {
+                        if dest_path == current_exe {
+                            dest_path = dest_path.with_extension("exe.new");
+                        }
+                    }
+
+                    if !seen_files.contains(&dest_path) {
+                        if dest_path.exists() {
+                            // Backup existing file
+                            let relative_path = dest_path
+                                .strip_prefix(root_directory)
+                                .with_context(|| "Failed to strip root directory prefix")?;
+                            let backup_path = backup_dir.join(relative_path);
+                            if let Some(parent) = backup_path.parent() {
+                                fs::create_dir_all(parent)?;
+                            }
+                            fs::rename(&dest_path, &backup_path).with_context(|| {
+                                format!("Failed to backup file {:?}", dest_path)
+                            })?;
+                            backed_up_files.push((dest_path.clone(), backup_path));
+                        } else {
+                            created_files.push(dest_path.clone());
+                        }
+                        if let Some(parent) = dest_path.parent() {
+                            fs::create_dir_all(parent)?;
+                        }
+                        fs::write(&dest_path, data)
+                            .with_context(|| format!("Failed to write file {:?}", dest_path))?;
+                        seen_files.insert(dest_path);
+                    }
+                }
+            }
+        }
+        Ok(())
+    })();
+
+    if let Err(e) = apply_result {
+        // Rollback
+        for created_file in created_files.into_iter() {
+            if created_file.exists() {
+                let _ = fs::remove_file(created_file);
+            }
+        }
+        for (dest_path, backup_path) in backed_up_files.into_iter() {
+            if backup_path.exists() {
+                if let Some(parent) = dest_path.parent() {
+                    let _ = fs::create_dir_all(parent);
+                }
+                let _ = fs::rename(backup_path, dest_path);
+            }
+        }
+        let _ = fs::remove_dir_all(&backup_dir);
+        return Err(e);
+    }
+
+    Ok(fs::remove_dir_all(&backup_dir)?)
+}
